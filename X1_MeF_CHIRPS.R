@@ -1,4 +1,13 @@
 
+remplace_valeur_manquante <- function(col) {
+  
+  valeur_mv <- rnorm(sum(is.na(col)),
+                         mean = 0, 
+                         sd = 2)
+  
+  col[is.na(col)] <- valeur_mv
+  return(col)
+}
 
 
 X1_creationCHIRPS_db <- function(para_dt_fin, para_interval_month,para_nbYear_scope) {
@@ -15,6 +24,7 @@ X1_creationCHIRPS_db <- function(para_dt_fin, para_interval_month,para_nbYear_sc
   
   # 1 | Importation des tables 
   
+  print("Importation des tables de référence : CHIRPS et AGRFIN.") 
   chirps_ori <- data.table::fread(paste0(path_data_vf,"/data_inputCHIRPS.csv"),dec=",")
   
   ls_code_insee <- haven::read_sas(data_file = paste0(path_data_vf,
@@ -24,6 +34,7 @@ X1_creationCHIRPS_db <- function(para_dt_fin, para_interval_month,para_nbYear_sc
     arrange() %>% 
     rename(code_insee = adr_depcom)
   
+  print("Filtrer la table d'origine") 
   chirps_1 <- chirps_ori %>% 
     dplyr::filter(date > c_dt_scope & date <= para_dt_fin) %>%
     dplyr::select(date, code_insee, rf_value_aug) %>% 
@@ -37,6 +48,7 @@ X1_creationCHIRPS_db <- function(para_dt_fin, para_interval_month,para_nbYear_sc
   
   # 2 | Transposition de la table 
   
+  print("Transposition de la table") 
   chirps_2 <- chirps_1 %>% 
     dplyr::left_join(ls_nb, by = "date") %>% 
     dplyr::mutate(seq_date = paste("M",seq, sep ="_")) %>% 
@@ -45,13 +57,15 @@ X1_creationCHIRPS_db <- function(para_dt_fin, para_interval_month,para_nbYear_sc
                        names_prefix = "rf_",
                        values_from = rf_value_aug)
   
-  chirps_3 <- ls_code_insee %>% left_join(chirps_2, by = "code_insee")
-  chirps_3[is.na(chirps_3)] <- rnorm(n = 1, mean = 0, sd = 2)
-  chirps_3$dt <- para_dt_fin
+  print("Gestion des valeurs manquantes") 
+  chirps_3 <- data.frame(ls_code_insee %>% left_join(chirps_2, by = "code_insee"))
+  chirps_4 <- data.frame(apply(chirps_3, MARGIN = 2, remplace_valeur_manquante))
+    
+  chirps_4$dt <- para_dt_fin
   
   
   print(paste0("Chargement de la table CHIRPS réussi : (",c_dt_scope , ")-(", para_dt_fin,")"))
   print("---------------------------------------------")
-  return(chirps_3)
+  return(chirps_4)
   
 }
