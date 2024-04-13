@@ -84,7 +84,7 @@ DB <- agrfin_data %>%
 # Sélectionner des variables
 
 
-sapply(chirps_data, function(x) sum(is.na(x)))
+sapply(DB, function(x) sum(is.na(x)))
 
 
 
