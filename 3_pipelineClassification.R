@@ -9,8 +9,8 @@ if (matricule == ""){
   path_USER <- ""
 }
 
-chargement_modeles <- TRUE
-forme_dt <- "simple"    # à mettre en place
+chargement_modeles <- FALSE
+forme_dt <- "poly"    # à mettre en place
   # SIMPLE : Pas de feature engineering 
   # POLY : DataSIMPLE + polygon sur les variables météo
   # Interaction : DataSIMPLE + poly + interaction
@@ -24,23 +24,31 @@ source(paste0(path_USER,"/pg_propre/","_before_libraries.R"))
 
 DB <- readRDS(paste0(path_data_vf,"/","base_postRET.RDS"))
 
+if (forme_dt == "poly"){
+  DB_poly <- readRDS(paste0(path_data_vf,"/","base_precipitationcarre.RDS"))
+  DB <- DB %>% cbind(DB_poly)
+}
+
 dt_placement <- readRDS(file = paste0(path_data_vf,"/","para_dt_placement.RDS"))
 interval_month <- readRDS( file = paste0(path_data_vf,"/","para_interval_month.RDS"))
 annee_nb <- readRDS( file = paste0(path_data_vf,"/","para_annee_nb.RDS"))
 
+nb_bloc <- 2 
+
 # 1 | chargement des modèles 
 
 if (chargement_modeles == FALSE){
-  logit_mod <- readRDS(file = paste0(path_data_vf,"/","mod_logit.RDS"))
   
-  ridge_mod <- readRDS(file = paste0(path_data_vf,"/","mod_ridge.RDS"))
-  lasso_mod <- readRDS(file = paste0(path_data_vf,"/","mod_lasso.RDS"))
-  elasNet_mod <- readRDS(file = paste0(path_data_vf,"/","mod_elasticNet.RDS"))
+  logit_mod <- readRDS(file = paste0(path_data_vf,"/",forme_dt,"_mod_logit.RDS"))
   
-  rpart_mdl <- readRDS(file = paste0(path_data_vf,"/","mod_arbre.RDS"))
+  ridge_mod <- readRDS(file = paste0(path_data_vf,"/",forme_dt,"_mod_ridge.RDS"))
+  lasso_mod <- readRDS(file = paste0(path_data_vf,"/",forme_dt,"_mod_lasso.RDS"))
+  elasNet_mod <- readRDS(file = paste0(path_data_vf,"/",forme_dt,"_mod_elasticNet.RDS"))
   
-  rF_mod1 <- readRDS(file = paste0(path_data_vf,"/","mod_rf1.RDS"))
-  xgb_mod <- readRDS(file = paste0(path_data_vf,"/","mod_xgb_mod.RDS"))
+  rpart_mdl <- readRDS(file = paste0(path_data_vf,"/",forme_dt,"_mod_arbre.RDS"))
+  
+  rF_mod1 <- readRDS(file = paste0(path_data_vf,"/",forme_dt,"_mod_rf1.RDS"))
+  xgb_mod <- readRDS(file = paste0(path_data_vf,"/",forme_dt,"_mod_xgb.RDS"))
 }
 
 
@@ -50,7 +58,6 @@ DB <- DB %>%
   select(-c(ea_ul)) # ligne qui va disparaître à terme
 
 
-nb_bloc = 4 
 set.seed(1234)
 blocs <- sample(rep(1:nb_bloc, length(nrow(DB))))
 
@@ -80,37 +87,37 @@ YYT <- eval_set$Y
 
 if (chargement_modeles == TRUE){
   logit_mod <- glm(Y~.,data=train_set,family="binomial")
-  saveRDS(logit_mod, file = paste0(path_data_vf,"/","mod_logit.RDS"))
+  saveRDS(logit_mod, file = paste0(path_data_vf,"/",forme_dt,"_mod_logit.RDS"))
 }
 tabPREV$logit <- predict(logit_mod, eval_set, type = 'response')
 
 if (chargement_modeles == TRUE){
   ridge_mod <- cv.glmnet(XXA,YYA,alpha=0,family="binomial", type.measure = "auc")
-  saveRDS(ridge_mod, file = paste0(path_data_vf,"/","mod_ridge.RDS"))
+  saveRDS(ridge_mod, file = paste0(path_data_vf,"/",forme_dt,"_mod_ridge.RDS"))
 }
 tabPREV$ridge <- predict(ridge_mod,XXT,s="lambda.min",type="response")
 
 if (chargement_modeles == TRUE){
   lasso_mod <- cv.glmnet(XXA,YYA,alpha=1,family="binomial", type.measure = "auc")
-  saveRDS(lasso_mod, file = paste0(path_data_vf,"/","mod_lasso.RDS"))
+  saveRDS(lasso_mod, file = paste0(path_data_vf,"/",forme_dt,"_mod_lasso.RDS"))
 }
 tabPREV$lasso <- predict(lasso_mod,XXT,s="lambda.min",type="response")
 
 if (chargement_modeles == TRUE){
   elasNet_mod <- cv.glmnet(XXA,YYA,alpha=0.5,family="binomial", type.measure = "auc")
-  saveRDS(elasNet_mod, file = paste0(path_data_vf,"/","mod_elasticNet.RDS"))
+  saveRDS(elasNet_mod, file = paste0(path_data_vf,"/",forme_dt,"_mod_elasticNet.RDS"))
 }
 tabPREV$elasticNet <- predict(elasNet_mod,XXT,s="lambda.min",type="response")
 
 if (chargement_modeles == TRUE){
   rpart_mdl <- rpart::rpart(as.factor(Y)~., data=train_set)
-  saveRDS(rpart_mdl, file = paste0(path_data_vf,"/","mod_arbre.RDS"))
+  saveRDS(rpart_mdl, file = paste0(path_data_vf,"/",forme_dt,"_mod_arbre.RDS"))
 }
 tabPREV$arbre <- predict(rpart_mdl,eval_set,type="prob")[,2]
 
 if (chargement_modeles == TRUE){
   rF_mod1 <- ranger::ranger(as.factor(Y)~., data=train_set, probability = TRUE)
-  saveRDS(rF_mod1, file = paste0(path_data_vf,"/","mod_rf1.RDS"))
+  saveRDS(rF_mod1, file = paste0(path_data_vf,"/",forme_dt,"_mod_rf1.RDS"))
 }
 tabPREV$rF_mod1 <- predict(rF_mod1,eval_set)$prediction[,2]
 
@@ -125,9 +132,9 @@ if (chargement_modeles == TRUE){
                      nrounds = iteropt, eta=0.1,
                      verbose = TRUE, 
                      objective = "binary:logistic")
-  saveRDS(xgb_mod, file = paste0(path_data_vf,"/","mod_xgb_mod.RDS"))
+  saveRDS(xgb_mod, file = paste0(path_data_vf,"/",forme_dt,"_mod_xgb.RDS"))
 }
-tabPREV$xgb_mod <- predict(xgb_mod,eval_set)
+tabPREV$xgb_mod <- predict(xgb_mod,xgb_test)
 
 
 
@@ -151,8 +158,6 @@ recall <- function(X,Y,seuil=0.5){
 }
 
 apply(X = tabPREV,2,accuracy,Y=tabPREV$Y)
-
 apply(X = tabPREV,2,accuracy,Y=tabPREV$Y,seuil = 0.001)
-
 apply(X = tabPREV,2,recall,Y=tabPREV$Y,seuil = 0.001)
 
