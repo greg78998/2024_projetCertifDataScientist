@@ -11,7 +11,7 @@ if (matricule == ""){
 
 # Chargement des utilisateurs 
 
-chargement_modeles <- TRUE
+chargement_modeles <- FALSE
 forme_dt <- "simple"   # ou poly
 nb_model <- 10
 
@@ -25,6 +25,8 @@ source(paste0(path_USER,"/pg_propre/","_before_chemins.R"))
 source(paste0(path_USER,"/pg_propre/","_before_libraries.R"))
 
 # 1 | chargement de la table + chargement des paramètres
+
+source(paste0(path_USER,"/pg_propre/","X3_MeF_predictionModels.R"))
 
 DB <- readRDS(paste0(path_data_vf,"/","base_postRET.RDS"))
 
@@ -61,76 +63,43 @@ for (pho in 1:nb_model){
   }
 }
 
-# 4 | Mise en place de dataframe REAL ---- NEVER_TRY
-real <- training %>% select(Y)
-never_try <- test_set %>% select(Y)
+# 4 | Mise en place de dataframe DF entrainement 
+DF_entrainement <- training %>% select(Y)## correspond à la population sur laquelle on travaille on produit les estim
+DF_test <- test_set %>% select(Y) ## on garde un dataframe sur lequel les modèles n'ont jamais vu les données
   
 
 # 5 - Charger les modèles 
 for (pho in 1:nb_model){
-  print(paste0("numero :",pho))
+  print(paste0("Modèles entrainés : n°",pho))
   rF_mod <- readRDS(file = paste0(path_data_vf,"/",forme_dt,"_vf_rf_n",pho,".RDS"))
-  real[, paste0("rf_",pho)] <- predict(rF_mod,training)$prediction[,2]
+  DF_entrainement[, paste0("rf_",pho)] <- predict(rF_mod,training)$prediction[,2]
+
+  print(paste0("Données jamais vu : n°",pho))
+  rF_mod <- readRDS(file = paste0(path_data_vf,"/",forme_dt,"_vf_rf_n",pho,".RDS"))
+  DF_test[, paste0("rf_",pho)] <- predict(rF_mod,test_set)$prediction[,2]
 }
 
 seuil <- 0.005
 
-real_db <- data.frame(real %>% select(-Y) > seuil)
-db_propUN <- data.frame(rf_voteMajo = rowSums(real_db)/dim(real)[2])
-db_propMOY <- data.frame(perc_mean = rowMeans(real %>% select(-Y)))
+DF_entrainement_aug <- add_var_model(para_db = DF_entrainement, para_threshold = seuil)
+DF_test_aug <- add_var_model(para_db = DF_test, para_threshold = seuil)
 
-real_db <- real %>% 
-  bind_cols(db_propUN, 
-            db_propMOY) %>%
-  mutate(top_voteMajo = ifelse(rf_voteMajo>0.5,1,0),
-         top_votePosi = ifelse(rf_voteMajo>0,1,0), 
-         top_percMean = ifelse(perc_mean > seuil,1,0)) 
+# test 
+saveRDS(DF_entrainement,
+        file = paste0(path_data_vf,"/","basesPREVISION_train",".RDS") )
+saveRDS(DF_test,
+        file = paste0(path_data_vf,"/","basesPREVISION_test",".RDS") )
 
-
-table(real_db$Y,real_db$top_voteMajo)
-table(real_db$Y,real_db$top_votePosi)
-table(real_db$Y,real_db$top_percMean)
+# Matrice de confusion
+table(DF_entrainement_aug$Y,DF_entrainement_aug$top_voteMajo)/dim(DF_entrainement_aug)[1]*100 # Un vote majoritaire
+table(DF_entrainement_aug$Y,DF_entrainement_aug$top_votePosi)/dim(DF_entrainement_aug)[1]*100 # Si un modele estime que la proba est supérieure au seuil
+table(DF_entrainement_aug$Y,DF_entrainement_aug$top_percMean)/dim(DF_entrainement_aug)[1]*100 # Si la moyenne des proba est supérieur au seuil
 
 
 
-### id seuil naturel
-
-aze <- sort(real_db$perc_mean, decreasing = FALSE)
-
-tab_aze <- table(real_db$Y)[2]/dim(real_db)[1]
-indice <- ceiling((1-tab_aze)*length(aze))
-
-seuil_naturel <- aze[indice]
-seuil <- seuil_naturel
-
-
-
-
-
-
-
-
-for (pho in 1:nb_model){
-  print(paste0("numero :",pho))
-  rF_mod <- readRDS(file = paste0(path_data_vf,"/",forme_dt,"_vf_rf_n",pho,".RDS"))
-  never_try[, paste0("rf_",pho)] <- predict(rF_mod,test_set)$prediction[,2]
-}
-
-
-nevertry_db <- data.frame(never_try %>% select(-Y) > seuil)
-db_propUN <- data.frame(rf_voteMajo = rowSums(never_try)/dim(never_try)[2])
-db_propMOY <- data.frame(perc_mean = rowMeans(never_try %>% select(-Y)))
-
-never_try_db <- never_try %>% 
-  bind_cols(db_propUN, db_propMOY) %>%
-  mutate(top_voteMajo = ifelse(rf_voteMajo>0.5,1,0),
-         top_votePosi = ifelse(rf_voteMajo>0,1,0), 
-         top_percMean = ifelse(perc_mean > seuil,1,0)) 
-
-
-round(table(never_try_db$Y,never_try_db$top_voteMajo)/dim(never_try_db)[1]*100,2)
-round(table(never_try_db$Y,never_try_db$top_votePosi)/dim(never_try_db)[1]*100,2)
-round(table(never_try_db$Y,never_try_db$top_percMean)/dim(never_try_db)[1]*100,2)
+round(table(DF_test_aug$Y,DF_test_aug$top_voteMajo)/dim(DF_test_aug)[1]*100,2)
+round(table(DF_test_aug$Y,DF_test_aug$top_votePosi)/dim(DF_test_aug)[1]*100,2)
+round(table(DF_test_aug$Y,DF_test_aug$top_percMean)/dim(DF_test_aug)[1]*100,2)
 
 
 

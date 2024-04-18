@@ -14,6 +14,10 @@ if (matricule == ""){
 source(paste0(path_USER,"/pg_propre/","_before_chemins.R"))
 source(paste0(path_USER,"/pg_propre/","_before_libraries.R"))
 
+# 0bis | chargement des fonctions 
+source(paste0(path_USER,"/pg_propre/","X3_MeF_predictionModels.R"))
+
+
 # 1 | chargement de la table + chargement des paramètres
 
 
@@ -27,6 +31,11 @@ db_defaillance <- haven::read_sas(data = paste0(path_data_vf,"/clean_donnees2.sa
   summarize(nb_defaillance = n())
 
 DB <- readRDS(paste0(path_data_vf,"/","base_postRET.RDS"))
-
-
 DB_defaillance <- DB %>% filter(top_defaillance ==1 )
+
+# On vient chercher la table de prévision
+
+DF_entrainement <- readRDS(file = paste0(path_data_vf,"/","basesPREVISION_train",".RDS") )
+DF_test <- readRDS(file = paste0(path_data_vf,"/","basesPREVISION_test",".RDS") )
+
+
