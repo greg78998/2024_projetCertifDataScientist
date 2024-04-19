@@ -1,9 +1,9 @@
 
 remplace_valeur_manquante <- function(col) {
   
-  valeur_mv <- rnorm(sum(is.na(col)),
+  valeur_mv <- round(rnorm(sum(is.na(col)),
                          mean = 0, 
-                         sd = 2)
+                         sd = 2),4)
   
   col[is.na(col)] <- valeur_mv
   return(col)
@@ -43,15 +43,17 @@ X1_creationCHIRPS_db <- function(para_dt_fin, para_interval_month,para_nbYear_sc
     dplyr::ungroup(date,code_insee) %>%
     dplyr::arrange(code_insee, desc(date))
   
-  ls_nb <- chirps_1 %>% select(date) %>% distinct()
-  ls_nb$seq <- seq(0, dim(chirps_1 %>% select(date) %>% distinct())[1]-1)
+  ls_nb_0 <- chirps_1 %>% select(date) %>% distinct()
+  ls_nb_0$seq <- seq(0, dim(chirps_1 %>% select(date) %>% distinct())[1]-1)
+  ls_nb <- ls_nb_0 %>% filter(seq > para_interval_month-1)
   
   # 2 | Transposition de la table 
   
   print("Transposition de la table") 
   chirps_2 <- chirps_1 %>% 
-    dplyr::left_join(ls_nb, by = "date") %>% 
-    dplyr::mutate(seq_date = paste("M",seq, sep ="_")) %>% 
+    dplyr::inner_join(ls_nb, by = "date") %>% 
+    dplyr::mutate(seq_date = paste("M",seq, sep ="_"), 
+                  rf_value_aug = round(rf_value_aug,3)) %>%
     pivot_wider(id_cols = code_insee, 
                        names_from = seq_date, 
                        names_prefix = "rf_",
