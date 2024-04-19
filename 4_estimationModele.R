@@ -58,6 +58,14 @@ test_set <- testing(data_split) # extraire le test set
 for (pho in 1:nb_model){
   print(paste0("numero :",pho))
   if (chargement_modeles == TRUE){
+    
+    if (pho < 3){
+      print(paste0("Entrainement logit n°",pho, sep= ""))
+      logit_mod_vf <- glm(Y~.,data=training,family="binomial")
+      saveRDS(logit_mod_vf, file = paste0(path_data_vf,"/",forme_dt,"_vf_logit_n",pho,".RDS"))
+    }
+    
+    print(paste0("Entrainement d'une forêt aléatoire n°",pho, sep= ""))
     rF_mod_vf <- ranger::ranger(as.factor(Y)~., data=training, probability = TRUE)
     saveRDS(rF_mod_vf, file = paste0(path_data_vf,"/",forme_dt,"_vf_rf_n",pho,".RDS"))
   }
@@ -66,21 +74,37 @@ for (pho in 1:nb_model){
 # 4 | Mise en place de dataframe DF entrainement 
 DF_entrainement <- training %>% select(Y)## correspond à la population sur laquelle on travaille on produit les estim
 DF_test <- test_set %>% select(Y) ## on garde un dataframe sur lequel les modèles n'ont jamais vu les données
-  
+
 
 # 5 - Charger les modèles 
 for (pho in 1:nb_model){
-  print(paste0("Modèles entrainés : n°",pho))
+  
+  print(paste0("Import des modèles entrainés : n°",pho))
+  
+  if (pho < 3){
+    print("logit")
+    logit_mod_vf <- readRDS(file = paste0(path_data_vf,"/",forme_dt,"_vf_logit_n",pho,".RDS"))
+    DF_entrainement[, paste0("logit_",pho)] <- predict(logit_mod_vf,training, type = "response")
+  }
+
+  print("randomForest")
   rF_mod <- readRDS(file = paste0(path_data_vf,"/",forme_dt,"_vf_rf_n",pho,".RDS"))
   DF_entrainement[, paste0("rf_",pho)] <- predict(rF_mod,training)$prediction[,2]
-
+  
   print(paste0("Données jamais vu : n°",pho))
+  
+  if (pho < 3){
+    print("logit")
+    logit_mod_vf <- readRDS(file = paste0(path_data_vf,"/",forme_dt,"_vf_logit_n",pho,".RDS"))
+    DF_test[, paste0("logit_",pho)] <- predict(logit_mod_vf,test_set, type = "response")
+  }
+  
+  print("randomForest")
   rF_mod <- readRDS(file = paste0(path_data_vf,"/",forme_dt,"_vf_rf_n",pho,".RDS"))
   DF_test[, paste0("rf_",pho)] <- predict(rF_mod,test_set)$prediction[,2]
 }
 
 seuil <- 0.005
-
 DF_entrainement_aug <- add_var_model(para_db = DF_entrainement, para_threshold = seuil)
 DF_test_aug <- add_var_model(para_db = DF_test, para_threshold = seuil)
 

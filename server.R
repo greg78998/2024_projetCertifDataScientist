@@ -7,7 +7,7 @@ library(shiny)
 library(htmlwidgets)
 library(pivottabler)
 library(tidyr)
-
+library(caret)
 
 
 
@@ -28,14 +28,19 @@ shinyServer(function(input, output) {
     })
     
     
-    output$slider_ui_randomForest <- renderUI({
-        if (input$choiceModels %in% "RandomForest") {
+    output$slider_ui_randomforest <- renderUI({
+        if(input$top_slider_rf) {
             sliderInput("sm_rf", 
                         "Nombre de forêts aléatoires:",
                         min = 0, max = 10, value = 5)
-        } else {
-            tag(NULL)
-        }
+        } 
+    })
+    output$slider_ui_logit <- renderUI({
+        if(input$top_slider_logit) {
+            sliderInput("sm_logit", 
+                        "Nombre de logit:",
+                        min = 0, max = 2, value = 1)
+        } 
     })
     
     
@@ -65,21 +70,63 @@ shinyServer(function(input, output) {
     })
     
     # Matrice de confusion
+    
     output$mat_conf1 <- DT::renderDataTable({
-        nb_rf <- min(1,input$sm_rf)
+        
+        nb_rf <- input$sm_rf
+        nb_logit <- input$sm_logit
+        
         selected_DB <- select(DF_entrainement, matches(c("Y",
-                                                         paste0("^rf_[1-",nb_rf,"]$"))))
+                                                         paste0("^rf_[0-",nb_rf,"]$"),
+                                                         paste0("^logit_[0-",nb_logit,"]$"))
+        )
+        )
         
         selected_DB_v2 <- add_var_model(selected_DB, input$slider_Threshold)
         
-        selected_DB_v3 <- selected_DB_v2 %>% 
-            rename(ChoixMajoritaire = top_voteMajo, 
-                   Moyenne_Pourcentage = top_percMean, 
-                   Un_Modele_Suffit = top_votePosi ) %>%
-            group_by(Y,!!sym(input$choiceIndicators)) %>%
-            summarise(n = n())
+        
+        selected_DB_v2 <- add_var_model(test_DB, input$slider_Threshold)
+        selected_DB_v3 <- selected_DB_v2
+        selected_DB_v3[,"Y"] <- factor(selected_DB_v3$Y, levels = c(0,1), labels = ls_label)
+        selected_DB_v3[,choice_A] <- factor(selected_DB_v3$top_voteMajo, levels = c(0,1), labels = ls_label)
+        selected_DB_v3[,choice_C] <- factor(selected_DB_v3$top_percMean, levels = c(0,1), labels = ls_label)
+        selected_DB_v3[,choice_B] <- factor(selected_DB_v3$top_votePosi, levels = c(0,1), labels = ls_label)
+        
+        
+        y <- data.frame(
+            round(
+                table(selected_DB_v3[,c("Y",input$choiceIndicators)])/dim(selected_DB_v3)[1]*100,
+                      2)
+        )
+        y
+        
+    })
     
-        selected_DB_v3
+    output$mat_conf2 <- DT::renderDataTable({
+        
+        nb_rf <- input$sm_rf
+        nb_logit <- input$sm_logit
+        
+        test_DB <- select(DF_test, matches(c("Y",
+                                             paste0("^rf_[0-",nb_rf,"]$"),
+                                             paste0("^logit_[0-",nb_logit,"]$"))
+        )
+        )
+        
+        test_DB_v2 <- add_var_model(test_DB, input$slider_Threshold)
+        test_DB_v3 <- test_DB_v2
+        test_DB_v3[,"Y"] <- factor(test_DB_v3$Y, levels = c(0,1), labels = ls_label)
+        test_DB_v3[,choice_A] <- factor(test_DB_v3$top_voteMajo, levels = c(0,1), labels = ls_label)
+        test_DB_v3[,choice_C] <- factor(test_DB_v3$top_percMean, levels = c(0,1), labels = ls_label)
+        test_DB_v3[,choice_B] <- factor(test_DB_v3$top_votePosi, levels = c(0,1), labels = ls_label)
+        
+        x <- data.frame(
+            round(
+                table(test_DB_v3[,c("Y",input$choiceIndicators)])/dim(test_DB_v3)[1]*100,
+                2)
+        )
+        y
+        x
     })
     
 })

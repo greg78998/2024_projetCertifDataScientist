@@ -38,4 +38,9 @@ DB_defaillance <- DB %>% filter(top_defaillance ==1 )
 DF_entrainement <- readRDS(file = paste0(path_data_vf,"/","basesPREVISION_train",".RDS") )
 DF_test <- readRDS(file = paste0(path_data_vf,"/","basesPREVISION_test",".RDS") )
 
+ls_label <- c("Non en difficulté", "En difficulté")
+
+choice_A <- "Choix_Majoritaire"
+choice_B <- "Un_modèle_suffit"
+choice_C <- "Sur_moyenne_probabilités"
 

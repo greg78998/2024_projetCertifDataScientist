@@ -64,25 +64,25 @@ ui <- fluidPage(
                      sidebarLayout(
                          sidebarPanel(
                              width = 3, 
-                             selectInput("choiceModels",
-                                         label = "Choix de la modélisation?", 
-                                         choices = c("RandomForest"),
-                                         selected = 'RandomForest', 
-                                         multiple = TRUE),
-                             selectInput("choiceIndicators",
-                                         label = "IndicateurChoisi", 
-                                         choices = c("ChoixMajoritaire",
-                                                     "Moyenne_Pourcentage",
-                                                     "Un_Modele_Suffit"),
-                                         selected = 'ChoixMajoritaire', 
-                                         multiple = FALSE),
+                             sliderInput("sm_logit", 
+                                         "Nombre de logit:",
+                                         min = 0, max = 2, value = 0),
+                             sliderInput("sm_rf", 
+                                         "Nombre de forêts aléatoires:",
+                                         min = 0, max = 10, value = 5),
                              
-                             uiOutput("slider_ui_randomForest"),
+                             selectInput("choiceIndicators",
+                                         label = "Méthode d'agrégation des modèles", 
+                                         choices = c(choice_A,
+                                                     choice_B,
+                                                     choice_C),
+                                         selected = choice_A, 
+                                         multiple = FALSE),
                              
                              
                              sliderInput("slider_Threshold", 
-                                         "Fixation du seuil",
-                                         min = 0, max = 1, step = 0.01,
+                                         "Seuil de probabilité",
+                                         min = 0, max = 0.5, step = 0.05,
                                          value = 0.2)
                          ),
                          mainPanel(
@@ -91,10 +91,10 @@ ui <- fluidPage(
                              p("Nous allons estimer plusieurs modèles et produire des combinaisons de modèles"),
                              br(), 
                              p("Sur la population :"),
-                             
+                             DT::dataTableOutput("mat_conf1"),
                              br(), 
                              p("Sur des données jamais vu : "),
-                             DT::dataTableOutput("mat_conf1"))
+                             DT::dataTableOutput("mat_conf2"))
                      )
                  )
         ), 
