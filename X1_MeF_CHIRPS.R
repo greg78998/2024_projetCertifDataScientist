@@ -1,9 +1,9 @@
 
 remplace_valeur_manquante <- function(col) {
   
-  valeur_mv <- round(rnorm(sum(is.na(col)),
-                         mean = 0, 
-                         sd = 2),4)
+  valeur_mv <- rnorm(sum(is.na(col)),
+                     mean = 0, 
+                     sd = 2)
   
   col[is.na(col)] <- valeur_mv
   return(col)
@@ -28,7 +28,7 @@ X1_creationCHIRPS_db <- function(para_dt_fin, para_interval_month,para_nbYear_sc
   chirps_ori <- data.table::fread(paste0(path_data_vf,"/data_inputCHIRPS.csv"),dec=",")
   
   ls_code_insee <- haven::read_sas(data_file = paste0(path_data_vf,
-                                                     "/clean_donnees2.sas7bdat", sep = ""), NULL) %>% 
+                                                      "/clean_donnees2.sas7bdat", sep = ""), NULL) %>% 
     select(adr_depcom) %>% 
     distinct() %>% 
     arrange() %>% 
@@ -55,16 +55,18 @@ X1_creationCHIRPS_db <- function(para_dt_fin, para_interval_month,para_nbYear_sc
     dplyr::mutate(seq_date = paste("M",seq, sep ="_"), 
                   rf_value_aug = round(rf_value_aug,3)) %>%
     pivot_wider(id_cols = code_insee, 
-                       names_from = seq_date, 
-                       names_prefix = "rf_",
-                       values_from = rf_value_aug)
+                names_from = seq_date, 
+                names_prefix = "rf_",
+                values_from = rf_value_aug)
   
   print("Gestion des valeurs manquantes") 
   chirps_3 <- data.frame(ls_code_insee %>% left_join(chirps_2, by = "code_insee"))
   chirps_4 <- data.frame(apply(chirps_3, MARGIN = 2, remplace_valeur_manquante))
-    
   chirps_4$dt <- para_dt_fin
+  chirps_5 <- chirps_4 %>% select(code_insee, dt) %>% bind_cols(
+              data.frame(apply(chirps_4 %>% select(starts_with("rf_M")), MARGIN = 2, as.double)))
   
+
   
   print(paste0("Chargement de la table CHIRPS réussi : (",c_dt_scope , ")-(", para_dt_fin,")"))
   print("---------------------------------------------")
