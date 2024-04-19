@@ -84,8 +84,6 @@ shinyServer(function(input, output) {
         
         selected_DB_v2 <- add_var_model(selected_DB, input$slider_Threshold)
         
-        
-        selected_DB_v2 <- add_var_model(test_DB, input$slider_Threshold)
         selected_DB_v3 <- selected_DB_v2
         selected_DB_v3[,"Y"] <- factor(selected_DB_v3$Y, levels = c(0,1), labels = ls_label)
         selected_DB_v3[,choice_A] <- factor(selected_DB_v3$top_voteMajo, levels = c(0,1), labels = ls_label)
@@ -96,9 +94,10 @@ shinyServer(function(input, output) {
         y <- data.frame(
             round(
                 table(selected_DB_v3[,c("Y",input$choiceIndicators)])/dim(selected_DB_v3)[1]*100,
-                      2)
+                2)
         )
         y
+        
         
     })
     
@@ -107,10 +106,11 @@ shinyServer(function(input, output) {
         nb_rf <- input$sm_rf
         nb_logit <- input$sm_logit
         
-        test_DB <- select(DF_test, matches(c("Y",
-                                             paste0("^rf_[0-",nb_rf,"]$"),
-                                             paste0("^logit_[0-",nb_logit,"]$"))
-        )
+        test_DB <- select(DF_test, 
+                          matches(c("Y",
+                                    paste0("^rf_[0-",nb_rf,"]$"),
+                                    paste0("^logit_[0-",nb_logit,"]$"))
+                          )
         )
         
         test_DB_v2 <- add_var_model(test_DB, input$slider_Threshold)
@@ -125,7 +125,7 @@ shinyServer(function(input, output) {
                 table(test_DB_v3[,c("Y",input$choiceIndicators)])/dim(test_DB_v3)[1]*100,
                 2)
         )
-        y
+        
         x
     })
     
