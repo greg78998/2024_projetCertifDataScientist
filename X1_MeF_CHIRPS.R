@@ -70,6 +70,6 @@ X1_creationCHIRPS_db <- function(para_dt_fin, para_interval_month,para_nbYear_sc
   
   print(paste0("Chargement de la table CHIRPS réussi : (",c_dt_scope , ")-(", para_dt_fin,")"))
   print("---------------------------------------------")
-  return(chirps_4)
+  return(chirps_5)
   
 }
