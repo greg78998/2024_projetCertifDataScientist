@@ -30,21 +30,20 @@ saveRDS(DB, file = paste0(path_data_vf,"/","base_postRET.RDS"))
 
 ### 2 - Créer les polygones sur les données meteo
 
-MiseAuCarre <- function(para_DB, para_dt_placement=dt_placement){
-  
-  XXmeteo_0 <- para_DB %>% select(starts_with("rf_M"))
-  XXmeteo <- XXmeteo_0^2
-  colnames(XXmeteo) <- paste(colnames(XXmeteo_0),"_sq",sep="")
-  
-  saveRDS(XXmeteo, file = paste0(path_data_vf,"/",para_dt_placement,"_sq_precipitation.RDS"))
-  
-}
-
-MiseAuCarre(para_DB = DB)
+MiseAuCarre(para_DB = DB, para_str_start ="rf_M")
 
 ### 3 - Travail sur les interactions 
 
+DB_surplus <- Creation_new_var(para_DB=DB, 
+                               para_str_start = "rf_",
+                               para_niv = 0, 
+                               para_newNameVar = "top_surplus", 
+                               para_abs = FALSE)
+DB_extreme_chocs <- Creation_new_var(para_DB=DB, 
+                                     para_str_start = "rf_",
+                                     para_niv = 1.5, 
+                                     para_newNameVar = "top_chocs", 
+                                     para_abs = TRUE)
 
 
-sapply(DB, function(x) sum(is.na(x)))
 

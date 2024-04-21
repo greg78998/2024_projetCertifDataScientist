@@ -1,7 +1,11 @@
 
 fc_transform_col <- function(para_DB,para_col, para_seuil){
   
-  seuil_nj <- 0.1
+  # fonction qui transforme une variable qualitative avec plusieurs de modalités 
+  #
+  # @ para_DB : dataframe sur lequel on travaille 
+  # @ para_col : la colonne que l'on va traiter 
+  # @ seuil : fixé en pourcentage
   
   tab2 <- data.frame(perc = round(table(para_DB[,para_col]) / dim(para_DB)[1]*100,2))
   tab3 <- tab2 %>% filter(perc.Freq > para_seuil*100)
@@ -15,24 +19,32 @@ fc_transform_col <- function(para_DB,para_col, para_seuil){
   return(tab4)
 }
 
-fc_transform_col_quanti <- function(para_DB,para_col, para_breaks){
-  
-  para_DB[,paste0(para_col,"_ret", sep = "")] <- cut(para_DB[,para_col], breaks = para_breaks)
-  
-  return(para_DB)
-}
 fc_transform_col_factor <- function(para_DB,para_col){
   
+  # fonction qui transforme une variable en facteur
+  #
+  # @ para_DB : dataframe sur lequel on travaille 
+  # @ para_col : la colonne que l'on va traiter 
+
   para_DB[,para_col] <- as.factor(para_DB[,para_col])
   
   return(para_DB)
 }
 fc_transform_col_delete <- function(para_DB, para_col){
+  
+  # fonction qui supprime la liste de variables
+  #
+  # @ para_DB : dataframe sur lequel on travaille 
+  # @ para_col : liste des colonnes que nous allons supprimer  
+
   para_DB <- para_DB[, !names(para_DB) %in% para_col]
   return(para_DB)
 }
 
 fc_transform_quali <- function(para_DB){
+  
+  # fonction qui applique l'ensemble des transformation 
+  # @ para_DB : le dataframe sur lequel on travaille en input 
   
   # Création d'une cat sur la variable nj
   transform_1 <- fc_transform_col(para_DB = para_DB, para_col = "nj", para_seuil = 0.1)
@@ -51,3 +63,50 @@ fc_transform_quali <- function(para_DB){
   
   return(para_DB)
 }
+
+
+
+MiseAuCarre <- function(para_DB, 
+                        para_dt_placement=dt_placement,
+                        para_str_start){
+  
+  #
+  # --> Mise au carré des variable qui commence par le string
+  #
+  # @ para_DB : le dataframe qui sert d'input
+  # @ para_dt_placement : la chaîne de caractère étudidée <- permet de stocker la base sous un autre nom
+  # @ para_str_start : chaine de caractère utilisé
+  
+  XXmeteo_0 <- para_DB %>% select(starts_with(para_str_start))
+  XXmeteo <- XXmeteo_0^2
+  colnames(XXmeteo) <- paste(colnames(XXmeteo_0),"_sq",sep="")
+  
+  saveRDS(XXmeteo, file = paste0(path_data_vf,"/",para_dt_placement,"_sq_",para_str_start,".RDS"))
+  
+}
+
+
+
+Creation_new_var <- function(para_DB, para_str_start, para_niv, para_newNameVar, para_abs){
+  #
+  # --> Fonction qui permet de créer de nouvelles variables engineering 
+  #
+  # @ para_DB : le dataframe qui sert d'input
+  # @ para_str_start : la chaîne de caractère étudidée
+  # @ para_niv : le seuil
+  # @ para_newNameVar : le nouveau nom de la variable
+  # @ para_abs : le seuil est-il en valeur absolue ou pas
+  
+  var_names <- grep(paste0("^",para_str_start, sep = ""), names(para_DB), value = TRUE)
+  for (var_name in var_names) {
+    if (para_abs==FALSE){
+      para_DB[[paste0(para_newNameVar,"_", var_name, sep = "")]] <- ifelse(para_DB[[var_name]] > para_niv, 1, 0)
+    } else {
+      para_DB[[paste0(para_newNameVar,"_", var_name, sep = "")]] <- ifelse(abs(para_DB[[var_name]]) > para_niv, 1, 0)
+      
+    }
+  }
+  para_DB_2 <- para_DB %>% select(starts_with(para_newNameVar))
+  return(para_DB_2)
+}
+
