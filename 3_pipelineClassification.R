@@ -9,11 +9,14 @@ if (matricule == ""){
   path_USER <- ""
 }
 
+
 chargement_modeles <- FALSE
-forme_dt <- "poly"    # à mettre en place
-  # SIMPLE : Pas de feature engineering 
-  # POLY : DataSIMPLE + polygon sur les variables météo
-  # Interaction : DataSIMPLE + poly + interaction
+forme_dt_ls <- c("simple","add","poly")  
+
+  # SIMPLE : Pas de feature engineering (sauf retraitement)
+  # ADD : Ajout de variables            (ajout de variables)
+  # POLY :  polygon sur les variables météo
+  # Interaction : encore à définir
   
 # 0 | chargement des libraries  -----
 
@@ -22,20 +25,22 @@ source(paste0(path_USER,"/pg_propre/","_before_libraries.R"))
 
 # 1 | chargement de la table + chargement des paramètres
 
-DB <- readRDS(paste0(path_data_vf,"/","base_postRET.RDS"))
+# choix de la table
+forme_dt  <- paste(forme_dt_ls, collapse = "_")
 
-if (forme_dt == "poly"){
-  DB_poly <- readRDS(paste0(path_data_vf,"/","base_precipitationcarre.RDS"))
-  DB <- DB %>% cbind(DB_poly)
-}
 
 dt_placement <- readRDS(file = paste0(path_data_vf,"/","para_dt_placement.RDS"))
 interval_month <- readRDS( file = paste0(path_data_vf,"/","para_interval_month.RDS"))
 annee_nb <- readRDS( file = paste0(path_data_vf,"/","para_annee_nb.RDS"))
 
+DB <- readRDS(paste0(path_data_vf,"/",dt_placement,"_DB_postRET.RDS"))          # = forme simple
+
+source(paste0(path_USER,"/pg_propre/","Y1_assemblageTables.R"))
+
+
 nb_bloc <- 2 
 
-# 1 | chargement des modèles 
+# 1 | chargement des modèles pour la cross validation
 
 if (chargement_modeles == FALSE){
   
@@ -58,23 +63,29 @@ DB <- DB %>%
   select(-c(ea_ul)) # ligne qui va disparaître à terme
 
 
-set.seed(1234)
-blocs <- sample(rep(1:nb_bloc, length(nrow(DB))))
+
 
 # 2 | Mise en place du training + test
 
 # pour véirfier que ça tourne 
 #DB <- training(initial_split(DB, strata = Y, prop = 1))
 
-data_split <- initial_split(DB, strata = Y, prop = 0.8)
+need <- TRUE    # Pour assurer la reproductivité 
+if (need){
+  set.seed(1234)
+  blocs <- sample(rep(1:nb_bloc, length(nrow(DB))))
+  
+  data_split <- initial_split(DB, strata = Y, prop = 0.8)
+  
+  training <- training(data_split) # data frame qui permet de faire le premier découpage
+  test_set <- testing(data_split) # extraire le test set
+  
+  training_split <- initial_split(training, strata = Y, prop = 0.8)
+  
+  train_set <- training(training_split)
+  eval_set <- testing(training_split)
+}
 
-training <- training(data_split) # data frame qui permet de faire le premier découpage
-test_set <- testing(data_split) # extraire le test set
-
-training_split <- initial_split(training, strata = Y, prop = 0.8)
-
-train_set <- training(training_split)
-eval_set <- testing(training_split)
 
 tabPREV <- eval_set %>% select(Y)
 
@@ -87,37 +98,37 @@ YYT <- eval_set$Y
 
 if (chargement_modeles == TRUE){
   logit_mod <- glm(Y~.,data=train_set,family="binomial")
-  saveRDS(logit_mod, file = paste0(path_data_vf,"/",forme_dt,"_mod_logit.RDS"))
+  saveRDS(logit_mod, file = paste0(path_pg_models_save,"/",forme_dt,"_mod_logit.RDS"))
 }
 tabPREV$logit <- predict(logit_mod, eval_set, type = 'response')
 
 if (chargement_modeles == TRUE){
   ridge_mod <- cv.glmnet(XXA,YYA,alpha=0,family="binomial", type.measure = "auc")
-  saveRDS(ridge_mod, file = paste0(path_data_vf,"/",forme_dt,"_mod_ridge.RDS"))
+  saveRDS(ridge_mod, file = paste0(path_pg_models_save,"/",forme_dt,"_mod_ridge.RDS"))
 }
 tabPREV$ridge <- predict(ridge_mod,XXT,s="lambda.min",type="response")
 
 if (chargement_modeles == TRUE){
   lasso_mod <- cv.glmnet(XXA,YYA,alpha=1,family="binomial", type.measure = "auc")
-  saveRDS(lasso_mod, file = paste0(path_data_vf,"/",forme_dt,"_mod_lasso.RDS"))
+  saveRDS(lasso_mod, file = paste0(path_pg_models_save,"/",forme_dt,"_mod_lasso.RDS"))
 }
 tabPREV$lasso <- predict(lasso_mod,XXT,s="lambda.min",type="response")
 
 if (chargement_modeles == TRUE){
   elasNet_mod <- cv.glmnet(XXA,YYA,alpha=0.5,family="binomial", type.measure = "auc")
-  saveRDS(elasNet_mod, file = paste0(path_data_vf,"/",forme_dt,"_mod_elasticNet.RDS"))
+  saveRDS(elasNet_mod, file = paste0(path_pg_models_save,"/",forme_dt,"_mod_elasticNet.RDS"))
 }
 tabPREV$elasticNet <- predict(elasNet_mod,XXT,s="lambda.min",type="response")
 
 if (chargement_modeles == TRUE){
   rpart_mdl <- rpart::rpart(as.factor(Y)~., data=train_set)
-  saveRDS(rpart_mdl, file = paste0(path_data_vf,"/",forme_dt,"_mod_arbre.RDS"))
+  saveRDS(rpart_mdl, file = paste0(path_pg_models_save,"/",forme_dt,"_mod_arbre.RDS"))
 }
 tabPREV$arbre <- predict(rpart_mdl,eval_set,type="prob")[,2]
 
 if (chargement_modeles == TRUE){
   rF_mod1 <- ranger::ranger(as.factor(Y)~., data=train_set, probability = TRUE)
-  saveRDS(rF_mod1, file = paste0(path_data_vf,"/",forme_dt,"_mod_rf1.RDS"))
+  saveRDS(rF_mod1, file = paste0(path_pg_models_save,"/",forme_dt,"_mod_rf1.RDS"))
 }
 tabPREV$rF_mod1 <- predict(rF_mod1,eval_set)$prediction[,2]
 
@@ -132,7 +143,7 @@ if (chargement_modeles == TRUE){
                      nrounds = iteropt, eta=0.1,
                      verbose = TRUE, 
                      objective = "binary:logistic")
-  saveRDS(xgb_mod, file = paste0(path_data_vf,"/",forme_dt,"_mod_xgb.RDS"))
+  saveRDS(xgb_mod, file = paste0(path_pg_models_save,"/",forme_dt,"_mod_xgb.RDS"))
 }
 tabPREV$xgb_mod <- predict(xgb_mod,xgb_test)
 

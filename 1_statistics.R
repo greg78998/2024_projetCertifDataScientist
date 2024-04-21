@@ -16,7 +16,7 @@ source(paste0(path_USER,"/pg_propre/","_before_libraries.R"))
 
 # 1 | chargement de la table + chargement des paramètres
 
-DB <- readRDS(paste0(path_data_vf,"/","base.rds"))
+DB <- readRDS(paste0(path_data_vf,"/",dt_placement,"_DB_.RDS"))
 
 dt_placement <- readRDS(file = paste0(path_data_vf,"/","para_dt_placement.RDS"))
 interval_month <- readRDS( file = paste0(path_data_vf,"/","para_interval_month.RDS"))

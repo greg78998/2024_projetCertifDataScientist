@@ -87,11 +87,12 @@ MiseAuCarre <- function(para_DB,
 
 
 
-Creation_new_var <- function(para_DB, para_str_start, para_niv, para_newNameVar, para_abs){
+Creation_new_var <- function(para_DB, para_dt_placement=dt_placement, para_str_start, para_niv, para_newNameVar, para_abs){
   #
   # --> Fonction qui permet de créer de nouvelles variables engineering 
   #
   # @ para_DB : le dataframe qui sert d'input
+  # @ para_dt_placement : permet de produire une table avec le bon prefix
   # @ para_str_start : la chaîne de caractère étudidée
   # @ para_niv : le seuil
   # @ para_newNameVar : le nouveau nom de la variable
@@ -107,6 +108,10 @@ Creation_new_var <- function(para_DB, para_str_start, para_niv, para_newNameVar,
     }
   }
   para_DB_2 <- para_DB %>% select(starts_with(para_newNameVar))
+  
+  saveRDS(para_DB_2, file = paste0(path_data_vf,"/",para_dt_placement,"_",para_newNameVar,".RDS"))
+  
   return(para_DB_2)
+  
 }
 

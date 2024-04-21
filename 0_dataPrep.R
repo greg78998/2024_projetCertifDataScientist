@@ -29,7 +29,7 @@ source("X2_MeF_AGRFIN.R")
 # 0 | Chargement de paramètres 
 dt_placement <-  as.Date("2023-12-31")       # date à laquelle on se place
 interval_month <- 12                         # pour calculer le top_defaillance
-annee_nb <- 3 
+annee_nb <- 5 
 
 saveRDS(dt_placement, file = paste0(path_data_vf,"/","para_dt_placement.RDS"))
 saveRDS(interval_month, file = paste0(path_data_vf,"/","para_interval_month.RDS"))
@@ -65,7 +65,7 @@ chirps_data <- X1_creationCHIRPS_db(para_dt_fin = dt_placement,            # dat
 ### (dans un second temps, les données de marché seront utilisées)
 
 # On rajoute les régions sur la base des département
-region_departement <- read_excel("C:/Users/N818398/Desktop/projetBdF/_data/region_departement.xlsx")
+region_departement <- read_excel(paste0(path_data_,"/region_departement.xlsx", sep =""))
 names(region_departement) <- c("department","departement_name", "region")
 
 
@@ -80,7 +80,6 @@ DB <- agrfin_data %>%
               select(department, region), by = "department")
 
 
-
 # Sélectionner des variables
 
 
@@ -88,5 +87,8 @@ sapply(DB, function(x) sum(is.na(x)))
 
 
 
-saveRDS(DB, file = paste0(path_data_vf,"/","base.RDS"))
+saveRDS(DB, file = paste0(path_data_vf,"/",dt_placement,"_DB_.RDS"))
 
+
+print(paste0("La table de référence est la suivante : ",dt_placement,"_DB_.RDS") )
+print(paste0("se trouve à l'adresse suivante : ",path_data_vf))
