@@ -23,9 +23,9 @@ DB_ori <- readRDS(paste0(path_data_vf,"/",dt_placement,"_DB_.RDS"))
 
 ########## Variable nj
 
-DB <- fc_transform_quali(para_DB = DB_ori) # voir fonctions dans X5
+DB_ret <- fc_transform_quali(para_DB = DB_ori) # voir fonctions dans X5
 
-saveRDS(DB, file = paste0(path_data_vf,"/",dt_placement,"_DB_postRET.RDS"))
+saveRDS(DB_ret, file = paste0(path_data_vf,"/",dt_placement,"_DB_postRET.RDS"))
 
 ### 2 - Créer les polygones sur les données meteo
 

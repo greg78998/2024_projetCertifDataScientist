@@ -50,7 +50,7 @@ fc_transform_quali <- function(para_DB){
   transform_1 <- fc_transform_col(para_DB = para_DB, para_col = "nj", para_seuil = 0.1)
   
   # Création sur les ape
-  transform_2 <- fc_transform_col(para_DB = transform_1_0, para_col = "ape", para_seuil = 0.08)
+  transform_2 <- fc_transform_col(para_DB = transform_1, para_col = "ape", para_seuil = 0.08)
   
   # Découper la variable age_ent
   transform_2[,paste0("ent_age","_ret", sep = "")] <- cut(transform_2$ent_age, breaks = c(0,3,10,20,40,200))
@@ -61,7 +61,7 @@ fc_transform_quali <- function(para_DB){
   # Retirer des colonnes 
   transform_5 <- fc_transform_col_delete(transform_4, para_col = c("department"))
   
-  return(para_DB)
+  return(transform_5)
 }
 
 

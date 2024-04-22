@@ -14,7 +14,10 @@ if (matricule == ""){
 chargement_modeles <- TRUE
 nb_model <- 10
 
-forme_dt_ls <- c("simple","add","poly")  
+forme_dt_ls <- c("simple")  
+#forme_dt_ls <- c("simple","add","poly")  
+
+
 # SIMPLE : Pas de feature engineering (sauf retraitement)
 # ADD : Ajout de variables            (ajout de variables)
 # POLY :  polygon sur les variables météo
@@ -89,44 +92,49 @@ for (pho in 1:nb_model){
 DF_entrainement <- training %>% select(Y)## correspond à la population sur laquelle on travaille on produit les estim
 DF_test <- test_set %>% select(Y) ## on garde un dataframe sur lequel les modèles n'ont jamais vu les données
 
+# La liste des modèles entrainés pour cette combi
+ls_model_vf <- list.files(
+  path = path_pg_models_save,
+  pattern = paste0(forme_dt,"_vf_"))
 
-# 5 - Charger les modèles 
-for (pho in 1:nb_model){
+for (ii in (ls_model_vf)){
   
-  print(paste0("Import des modèles entrainés : n°",pho))
-  
-  if (pho < 3){
-    print("logit")
-    logit_mod_vf <- readRDS(file = paste0(path_pg_models_save,"/",forme_dt,"_vf_logit_n",pho,".RDS"))
-    DF_entrainement[, paste0("logit_",pho)] <- predict(logit_mod_vf,training, type = "response")
-  }
+  mod_vf_load <- str_split(ii,pattern = "_")[[1]][3]
+  mod_num <- str_sub(str_split(ii,pattern = "_")[[1]][4],1,-5)
 
-  print("randomForest")
-  rF_mod <- readRDS(file = paste0(path_pg_models_save,"/",forme_dt,"_vf_rf_n",pho,".RDS"))
-  DF_entrainement[, paste0("rf_",pho)] <- predict(rF_mod,training)$prediction[,2]
+  print(paste(mod_vf_load,mod_num, sep ="_"))
   
-  print(paste0("Données jamais vu : n°",pho))
+  mod <- readRDS(file = paste0(path_pg_models_save,"/",ii))
   
-  if (pho < 3){
-    print("logit")
-    logit_mod_vf <- readRDS(file = paste0(path_pg_models_save,"/",forme_dt,"_vf_logit_n",pho,".RDS"))
-    DF_test[, paste0("logit_",pho)] <- predict(logit_mod_vf,test_set, type = "response")
+  if (mod_vf_load == "logit"){
+    print("Toute pop")
+    DF_entrainement[,paste(mod_vf_load,mod_num, sep ="_")] <- predict(mod,training, type = "response")
+    print("Données jamais vu")
+    DF_test[,paste(mod_vf_load,mod_num, sep ="_")] <- predict(mod,test_set, type = "response")
+  }
+  if (mod_vf_load == "rf"){
+    print("TOute population")
+    DF_entrainement[, paste(mod_vf_load,mod_num, sep ="_")] <- predict(mod,training)$prediction[,2]
+    print("Données jamais vu")
+    DF_test[, paste(mod_vf_load,mod_num, sep ="_")] <- predict(mod,test_set)$prediction[,2]
   }
   
-  print("randomForest")
-  rF_mod <- readRDS(file = paste0(path_pg_models_save,"/",forme_dt,"_vf_rf_n",pho,".RDS"))
-  DF_test[, paste0("rf_",pho)] <- predict(rF_mod,test_set)$prediction[,2]
 }
-
-seuil <- 0.005
-DF_entrainement_aug <- add_var_model(para_db = DF_entrainement, para_threshold = seuil)
-DF_test_aug <- add_var_model(para_db = DF_test, para_threshold = seuil)
 
 # test 
 saveRDS(DF_entrainement,
         file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,"pourSHINY_training",".RDS") )
 saveRDS(DF_test,
         file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,"pourSHINY_test",".RDS") )
+
+
+
+
+
+
+seuil <- 0.005
+DF_entrainement_aug <- add_var_model(para_db = DF_entrainement, para_threshold = seuil)
+DF_test_aug <- add_var_model(para_db = DF_test, para_threshold = seuil)
 
 # Matrice de confusion
 table(DF_entrainement_aug$Y,DF_entrainement_aug$top_voteMajo)/dim(DF_entrainement_aug)[1]*100 # Un vote majoritaire
