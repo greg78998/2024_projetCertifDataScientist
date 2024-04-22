@@ -1,35 +1,33 @@
-
-fc_transform_col <- function(para_DB,para_col, para_seuil){
+fc_transform_col <- function(para_DB, para_col, para_seuil){
   
-  # fonction qui transforme une variable qualitative avec plusieurs de modalités 
+  # Fonction qui transforme une variable qualitative avec plusieurs modalités
   #
-  # @ para_DB : dataframe sur lequel on travaille 
-  # @ para_col : la colonne que l'on va traiter 
-  # @ seuil : fixé en pourcentage
+  # @ para_DB : DataFrame sur lequel on travaille
+  # @ para_col : Nom de la colonne que l'on va traiter (comme chaîne de caractères)
+  # @ para_seuil : Seuil de pourcentage pour garder les modalités fréquentes
   
-  tab2 <- data.frame(perc = round(table(para_DB[,para_col]) / dim(para_DB)[1]*100,2))
-  tab3 <- tab2 %>% filter(perc.Freq > para_seuil*100)
+  # Table de pourcentages des valeurs uniques de la colonne
+  tab2 <- data.frame(
+    Var1 = names(table(para_DB[[para_col]])), 
+    Freq = round(table(para_DB[[para_col]]) / nrow(para_DB) * 100, 2)
+  )
   
-  tab4 <- para_DB
-  tab4[,paste0(para_col,"_ret", sep = "")] <- as.factor(
-    ifelse(tab4[,para_col] %in% tab3$perc.Var1,
-           tab4[,para_col],
-           "Autres"))
+  # Filtrer les valeurs qui dépassent le seuil
+  tab3 <- tab2 %>% dplyr::filter(Freq.Freq > para_seuil*100)
   
-  return(tab4)
-}
-
-fc_transform_col_factor <- function(para_DB,para_col){
+  # Créer une nouvelle colonne en catégorisant les valeurs
+  para_DB[[paste0(para_col, "_ret")]] <- ifelse(
+    para_DB[[para_col]] %in% tab3$Var1,
+    para_DB[[para_col]],
+    "Autres"
+  )
   
-  # fonction qui transforme une variable en facteur
-  #
-  # @ para_DB : dataframe sur lequel on travaille 
-  # @ para_col : la colonne que l'on va traiter 
-
-  para_DB[,para_col] <- as.factor(para_DB[,para_col])
+  # Supprimer la colonne originale
+  para_DB <- para_DB[, !(names(para_DB) %in% para_col)]
   
   return(para_DB)
 }
+
 fc_transform_col_delete <- function(para_DB, para_col){
   
   # fonction qui supprime la liste de variables
@@ -47,19 +45,26 @@ fc_transform_quali <- function(para_DB){
   # @ para_DB : le dataframe sur lequel on travaille en input 
   
   # Création d'une cat sur la variable nj
+  print("Transformation de la variable nj")
   transform_1 <- fc_transform_col(para_DB = para_DB, para_col = "nj", para_seuil = 0.1)
   
   # Création sur les ape
+  print("Transformation de la variable ape")
   transform_2 <- fc_transform_col(para_DB = transform_1, para_col = "ape", para_seuil = 0.08)
   
   # Découper la variable age_ent
+  print("Découpage de la variable ent_age")
   transform_2[,paste0("ent_age","_ret", sep = "")] <- cut(transform_2$ent_age, breaks = c(0,3,10,20,40,200))
+  transform_2 <- transform_2[, !names(transform_2) %in% 'ent_age']
+  
   
   # Transformer en facteur 
-  transform_4 <- fc_transform_col_factor(transform_2,para_col = "region")
-  
+  print("Mise en facteur de la variable region")
+  transform_2$region <- factor(transform_2$region)
+    
   # Retirer des colonnes 
-  transform_5 <- fc_transform_col_delete(transform_4, para_col = c("department"))
+  print("Suppression de la variable department")
+  transform_5 <- fc_transform_col_delete(transform_2, para_col = c("department"))
   
   return(transform_5)
 }

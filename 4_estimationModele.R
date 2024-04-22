@@ -50,7 +50,6 @@ DB <- readRDS(paste0(path_data_vf,"/",dt_placement,"_DB_postRET.RDS"))          
 source(paste0(path_USER,"/pg_propre/","Y1_assemblageTables.R"))
 
 
-
 # 2 | Remise en page du dataframe 
 
 DB <- DB %>% 
@@ -73,7 +72,6 @@ if (need){
 for (pho in 1:nb_model){
   print(paste0("numero :",pho))
   if (chargement_modeles == TRUE){
-    
     if (pho < 3){
       print(paste0("Entrainement logit n°",pho, sep= ""))
       logit_mod_vf <- glm(Y~.,data=training,family=binomial(link = "probit"))
