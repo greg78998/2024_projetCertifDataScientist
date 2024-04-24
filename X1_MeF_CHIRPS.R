@@ -17,7 +17,9 @@ X1_creationCHIRPS_db <- function(para_dt_fin, para_interval_month,para_nbYear_sc
   ### para_dt_scope       <- combien de période nous voulons dans M_...
   
   # TOP_Defaillance va être calculer par cette variable
-  c_dt_deb <- seq(para_dt_fin, by = "-1 month", length.out=para_interval_month)[para_interval_month]
+  # pour dt_placement à fin 2023, on veut obtenir 2023-01-01 (et pas 2023-01-31) pour para_dt_placement = 2023-12-31
+  c_dt_deb <- floor_date(para_dt_fin, "month") - months(para_interval_month)
+  c_dt_deb <- as.Date(c_dt_deb)
   # Date qui va nous permettre de travailler moins de données
   c_dt_scope <- seq(para_dt_fin, by = "-1 month", 
                     length.out=para_nbYear_scope * 12 + 2)[para_nbYear_scope * 12 + 2]
