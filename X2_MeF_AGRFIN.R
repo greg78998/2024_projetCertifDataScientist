@@ -8,7 +8,7 @@ X2_creationSIREN_db <- function(para_dt_placement,
   ## para_dt_placement <- as.Date("2023-12-31")
   ## para_interval <- 11
   
-  # on veut obtenir 2023-01-01 (et pas 2023-01-31) pour para_dt_placement = 2023-12-31, d'où 4 étapes
+  # on veut obtenir 2023-01-01 (et pas 2023-01-31) pour para_dt_placement = 2023-12-31
   c_dt_deb <- floor_date(para_dt_placement, "month") - months(para_interval)
   c_dt_deb <- as.Date(c_dt_deb)
   
