@@ -108,11 +108,15 @@ X2_creationSIREN_db <- function(para_dt_placement,
                                             agr_fin_data_3$date_min <= dt_placement &
                                             agr_fin_data_3$date_min >= c_dt_deb,1,0) 
   
-  # Suppression des établissements déjà défaillant avant phase d'analyse (on ne garde pas soit si défaillance Y ET défaillance avant 2023-01-31)
+  # Suppression des établissements déjà défaillant avant phase d'analyse (on ne garde pas si défaillance Y ET défaillance avant 2023-01-31)
   agr_fin_data_vf <-  agr_fin_data_3 %>% 
     filter(!(top_defaillance=="Y" & 
                (date_min < c_dt_deb) )) %>% 
     mutate(dt = para_dt_placement)
+  
+  # Suppression des établissements créés pendant ou après la période d'analyse de la défaillance (fonction de la dt_placement) 
+  agr_fin_data_vf <-  agr_fin_data_vf %>% 
+    filter(!(as.Date(agr_fin_data_vf$date_creation)>=c_dt_deb))
   
   # summary(agr_fin_data_vf)
   
