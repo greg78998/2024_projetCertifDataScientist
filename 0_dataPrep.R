@@ -28,7 +28,7 @@ source("X2_MeF_AGRFIN.R")
 
 # 0 | Chargement de paramètres 
 dt_placement <-  as.Date("2023-12-31")       # date à laquelle on se place
-interval_month <- 12                         # pour calculer le top_defaillance
+interval_month <- 11                         # pour calculer le top_defaillance
 annee_nb <- 5 
 
 saveRDS(dt_placement, file = paste0(path_data_vf,"/","para_dt_placement.RDS"))
