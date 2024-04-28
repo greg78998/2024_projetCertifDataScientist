@@ -8,7 +8,7 @@ X2_creationSIREN_db <- function(para_dt_placement,
   ## para_dt_placement <- as.Date("2023-12-31")
   ## para_interval <- 11
   
-  # on veut obtenir 2023-01-01 (et pas 2023-01-31) pour para_dt_placement = 2023-12-31
+  # on veut obtenir 2023-01-01 (et pas 2023-01-31) pour para_dt_placement = 2023-12-31, d'où 4 étapes
   c_dt_deb <- floor_date(para_dt_placement, "month") - months(para_interval)
   c_dt_deb <- as.Date(c_dt_deb)
   
@@ -16,6 +16,7 @@ X2_creationSIREN_db <- function(para_dt_placement,
   # chargement des données relatives aux SIREN 
   agr_fin_data <- haven::read_sas(data_file = paste0(path_data_vf,
                                                      "/clean_donnees2.sas7bdat", sep = ""), NULL)
+  summary(agr_fin_data)
   
   # Nom des variables en minuscules
   names(agr_fin_data) <- tolower(names(agr_fin_data))
@@ -41,7 +42,21 @@ X2_creationSIREN_db <- function(para_dt_placement,
   
         agr_fin_data_0$e001_moy <- rowMeans(agr_fin_data_0[,c("e001_m_2014", "e001_m_2015", "e001_m_2016", "e001_m_2017", "e001_m_2018", "e001_m_2019", "e001_m_2020", "e001_m_2021")], na.rm=TRUE)
         agr_fin_data_0$r310_moy <- rowMeans(agr_fin_data_0[,c("r310_m_2014", "r310_m_2015", "r310_m_2016", "r310_m_2017", "r310_m_2018", "r310_m_2019", "r310_m_2020", "r310_m_2021")], na.rm=TRUE)
-  
+        agr_fin_data_0$b001_moy <- rowMeans(agr_fin_data_0[,c("b001_m_2014", "b001_m_2015", "b001_m_2016", "b001_m_2017", "b001_m_2018", "b001_m_2019", "b001_m_2020", "b001_m_2021")], na.rm=TRUE)
+        agr_fin_data_0$b002_moy <- rowMeans(agr_fin_data_0[,c("b002_m_2014", "b002_m_2015", "b002_m_2016", "b002_m_2017", "b002_m_2018", "b002_m_2019", "b002_m_2020", "b002_m_2021")], na.rm=TRUE)
+        agr_fin_data_0$b102_moy <- rowMeans(agr_fin_data_0[,c("b102_m_2014", "b102_m_2015", "b102_m_2016", "b102_m_2017", "b102_m_2018", "b102_m_2019", "b102_m_2020", "b102_m_2021")], na.rm=TRUE)
+        agr_fin_data_0$b103_moy <- rowMeans(agr_fin_data_0[,c("b103_m_2014", "b103_m_2015", "b103_m_2016", "b103_m_2017", "b103_m_2018", "b103_m_2019", "b103_m_2020", "b103_m_2021")], na.rm=TRUE)
+        agr_fin_data_0$b330_moy <- rowMeans(agr_fin_data_0[,c("b330_m_2014", "b330_m_2015", "b330_m_2016", "b330_m_2017", "b330_m_2018", "b330_m_2019", "b330_m_2020", "b330_m_2021")], na.rm=TRUE)
+        agr_fin_data_0$b342_moy <- rowMeans(agr_fin_data_0[,c("b342_m_2014", "b342_m_2015", "b342_m_2016", "b342_m_2017", "b342_m_2018", "b342_m_2019", "b342_m_2020", "b342_m_2021")], na.rm=TRUE)
+        agr_fin_data_0$b348_moy <- rowMeans(agr_fin_data_0[,c("b348_m_2014", "b348_m_2015", "b348_m_2016", "b348_m_2017", "b348_m_2018", "b348_m_2019", "b348_m_2020", "b348_m_2021")], na.rm=TRUE)
+        agr_fin_data_0$b500_moy <- rowMeans(agr_fin_data_0[,c("b500_m_2014", "b500_m_2015", "b500_m_2016", "b500_m_2017", "b500_m_2018", "b500_m_2019", "b500_m_2020", "b500_m_2021")], na.rm=TRUE)
+        agr_fin_data_0$r005_moy <- rowMeans(agr_fin_data_0[,c("r005_m_2014", "r005_m_2015", "r005_m_2016", "r005_m_2017", "r005_m_2018", "r005_m_2019", "r005_m_2020", "r005_m_2021")], na.rm=TRUE)
+        agr_fin_data_0$r008_moy <- rowMeans(agr_fin_data_0[,c("r008_m_2014", "r008_m_2015", "r008_m_2016", "r008_m_2017", "r008_m_2018", "r008_m_2019", "r008_m_2020", "r008_m_2021")], na.rm=TRUE)
+        agr_fin_data_0$r100_moy <- rowMeans(agr_fin_data_0[,c("r100_m_2014", "r100_m_2015", "r100_m_2016", "r100_m_2017", "r100_m_2018", "r100_m_2019", "r100_m_2020", "r100_m_2021")], na.rm=TRUE)
+        agr_fin_data_0$r310_moy <- rowMeans(agr_fin_data_0[,c("r310_m_2014", "r310_m_2015", "r310_m_2016", "r310_m_2017", "r310_m_2018", "r310_m_2019", "r310_m_2020", "r310_m_2021")], na.rm=TRUE)
+        agr_fin_data_0$r420_moy <- rowMeans(agr_fin_data_0[,c("r420_m_2014", "r420_m_2015", "r420_m_2016", "r420_m_2017", "r420_m_2018", "r420_m_2019", "r420_m_2020", "r420_m_2021")], na.rm=TRUE)
+        
+        
         agr_fin_data_1 <- agr_fin_data_0
         agr_fin_data_1[e001_a_travailler] <- lapply(agr_fin_data_0[e001_a_travailler], function(col) ifelse(is.na(col), agr_fin_data_0$e001_mode, col))
         # summary(agr_fin_data_1)
@@ -97,7 +112,7 @@ X2_creationSIREN_db <- function(para_dt_placement,
 
         
         #################### FUSION APRES RETRAITEMENTS DONNEES ABERRANTES ##################
-        agr_fin_data_3 <- merge(agr_fin_data_2[,-c(9:26,28:ncol(agr_fin_data_2))],agr_fin_data_2_e001_vf[,c(1,4)], by="siren")
+        agr_fin_data_3 <- merge(agr_fin_data_2[,-c(9:122,136:ncol(agr_fin_data_2))],agr_fin_data_2_e001_vf[,c(1,4)], by="siren")
         agr_fin_data_3 <- rename(agr_fin_data_3, ca_moy_2014_2021=r310_moy, effectifs_moy_2014_2021=e001_moy)
 
   
