@@ -25,24 +25,34 @@ DB_ori <- readRDS(paste0(path_data_vf,"/",dt_placement,"_DB_.RDS"))
 
 DB_ret <- fc_transform_quali(para_DB = DB_ori) # voir fonctions dans X5
 
-saveRDS(DB_ret, file = paste0(path_data_vf,"/",dt_placement,"_DB_postRET.RDS"))
-
 ### 2 - Créer les polygones sur les données meteo
 
-MiseAuCarre(para_DB = DB, para_str_start ="rf_M")
+DB_poly <- MiseAuCarre(para_DB = DB_ori, para_str_start ="rf_M")
 
 ### 3 - Travail sur les interactions 
 
-DB_surplus <- Creation_new_var(para_DB=DB, 
+DB_surplus <- Creation_new_var(para_DB=DB_ori, 
                                para_str_start = "rf_",
                                para_niv = 0, 
                                para_newNameVar = "top_surplus", 
                                para_abs = FALSE)
-DB_extreme_chocs <- Creation_new_var(para_DB=DB, 
+
+DB_extreme_chocs <- Creation_new_var(para_DB=DB_ori, 
                                      para_str_start = "rf_",
                                      para_niv = 1.5, 
                                      para_newNameVar = "top_chocs", 
                                      para_abs = TRUE)
 
+#### 4 - Des variables cumulatives 
 
+
+DB_surplus_succ <- add_cumul_function(para_db =DB_surplus, 
+                                      prefix = "top_surplus_rf_M", 
+                                      para_interval = 3, 
+                                      new_nom = "surplus")
+
+DB_surplus_succ <- add_cumul_function(para_db =DB_extreme_chocs, 
+                                      prefix = "top_chocs_rf_M", 
+                                      para_interval = 3, 
+                                      new_nom = "chocs")
 

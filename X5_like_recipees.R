@@ -66,6 +66,9 @@ fc_transform_quali <- function(para_DB){
   print("Suppression de la variable department")
   transform_5 <- fc_transform_col_delete(transform_2, para_col = c("department"))
   
+  # sauvegarder la table
+  saveRDS(transform_5, file = paste0(path_data_vf,"/",dt_placement,"_DB_postRET.RDS"))
+  
   return(transform_5)
 }
 
@@ -88,6 +91,7 @@ MiseAuCarre <- function(para_DB,
   
   saveRDS(XXmeteo, file = paste0(path_data_vf,"/",para_dt_placement,"_sq_",para_str_start,".RDS"))
   
+  return(XXmeteo)
 }
 
 
@@ -118,5 +122,25 @@ Creation_new_var <- function(para_DB, para_dt_placement=dt_placement, para_str_s
   
   return(para_DB_2)
   
+}
+
+add_cumul_function <- function(para_db, para_interval, prefix,new_nom){
+  
+  for (ii in seq(interval_month+1,interval_month+dim(para_db)[2]-para_interval)){
+    
+    s <- seq(ii+1,ii+para_interval) 
+    s_cal <- paste0(prefix, "_",s)
+    
+    para_db[,paste("top_succ",para_interval,new_nom, ii, sep = "_")] = round(rowSums(para_db[, s_cal])/para_interval,0)
+  }
+  
+  ls_var_cons <- grep(paste("top_succ",para_interval, sep = "_"), names(para_db), value = TRUE)
+  
+  para_db_vf <- para_db %>% select(all_of(ls_var_cons))
+  
+  print(paste0("La table :",dt_placement,"_succ_",para_interval,"_",new_nom , " est sauvegardée."))
+  saveRDS(para_db_vf, file = paste0(path_data_vf,"/",dt_placement,"_succ_",para_interval,"_",new_nom,".RDS"))
+  
+  return(para_db_vf)
 }
 

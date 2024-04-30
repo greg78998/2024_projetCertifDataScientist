@@ -34,20 +34,19 @@ source(paste0(path_USER,"/pg_propre/","_before_libraries.R"))
 # 1 | chargement de la table + chargement des paramètres
 
 source(paste0(path_USER,"/pg_propre/","X3_MeF_predictionModels.R"))
+source(paste0(path_USER,"/pg_propre/","X6_assemblage_table.R"))
 
 dt_placement <- readRDS(file = paste0(path_data_vf,"/","para_dt_placement.RDS"))
 interval_month <- readRDS( file = paste0(path_data_vf,"/","para_interval_month.RDS"))
 annee_nb <- readRDS( file = paste0(path_data_vf,"/","para_annee_nb.RDS"))
 
+
+forme_dt_ls <- c("simple","add_surplus","add_chocs","add_succ_surplus","add_succ_chocs","poly")  
 forme_dt  <- paste(forme_dt_ls, collapse = "_") # pour les dénomination des modèles
 
-dt_placement <- readRDS(file = paste0(path_data_vf,"/","para_dt_placement.RDS"))
-interval_month <- readRDS( file = paste0(path_data_vf,"/","para_interval_month.RDS"))
-annee_nb <- readRDS( file = paste0(path_data_vf,"/","para_annee_nb.RDS"))
+DB <- X6_construction_base(forme_dt_ls,para_succ_nb_periode = 3)
 
-DB <- readRDS(paste0(path_data_vf,"/",dt_placement,"_DB_postRET.RDS"))          # = forme simple
 
-source(paste0(path_USER,"/pg_propre/","Y1_assemblageTables.R"))
 
 
 # 2 | Remise en page du dataframe 
