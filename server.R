@@ -8,10 +8,10 @@ library(htmlwidgets)
 library(pivottabler)
 library(tidyr)
 library(caret)
+library(shinyWidgets)
 
 
 
-# Define server logic required to draw a histogram
 shinyServer(function(input, output) {
     
     output$h2_title1 <- renderUI({
@@ -65,68 +65,102 @@ shinyServer(function(input, output) {
     output$def_table3 <- DT::renderDataTable({
         db_defaillance
     })
-    output$def_table4 <- DT::renderDataTable({
-        db_defaillance
-    })
     
     # Matrice de confusion
     
-    output$mat_conf1 <- DT::renderDataTable({
-        
-        nb_rf <- input$sm_rf
-        nb_logit <- input$sm_logit
-        
-        selected_DB <- select(DF_entrainement, matches(c("Y",
-                                                         paste0("^rf_[0-",nb_rf,"]$"),
-                                                         paste0("^logit_[0-",nb_logit,"]$"))
-        )
-        )
-        
-        selected_DB_v2 <- add_var_model(selected_DB, input$slider_Threshold)
-        
-        selected_DB_v3 <- selected_DB_v2
-        selected_DB_v3[,"Y"] <- factor(selected_DB_v3$Y, levels = c(0,1), labels = ls_label)
-        selected_DB_v3[,choice_A] <- factor(selected_DB_v3$top_voteMajo, levels = c(0,1), labels = ls_label)
-        selected_DB_v3[,choice_C] <- factor(selected_DB_v3$top_percMean, levels = c(0,1), labels = ls_label)
-        selected_DB_v3[,choice_B] <- factor(selected_DB_v3$top_votePosi, levels = c(0,1), labels = ls_label)
+    output$confusionMatrix_1 <- renderPlot({
         
         
-        y <- data.frame(
-            round(
-                table(selected_DB_v3[,c("Y",input$choiceIndicators)])/dim(selected_DB_v3)[1]*100,
-                2)
-        )
-        y
+        matrixPlot1 <- X_compute_confusion_matrix(para_nb_rf = input$sm_rf, 
+                                                  para_nb_logit = input$sm_logit, 
+                                                  para_nb_xgb = input$sm_xgb,
+                                                  para_threshold = input$slider_Threshold, 
+                                                  para_DB = DF_entrainement, 
+                                                  para_var_selected = input$choiceIndicators)
+        
+        
+        plot_cm_1 <- X_draw_plot_confusion_matrix(matrixPlot1)
+        
+        print(plot_cm_1)
         
         
     })
     
-    output$mat_conf2 <- DT::renderDataTable({
+    output$confusionMatrix_2 <- renderPlot({
         
-        nb_rf <- input$sm_rf
-        nb_logit <- input$sm_logit
         
-        test_DB <- select(DF_test, 
-                          matches(c("Y",
-                                    paste0("^rf_[0-",nb_rf,"]$"),
-                                    paste0("^logit_[0-",nb_logit,"]$"))
-                          )
-        )
+        matrixPlot2 <- X_compute_confusion_matrix(para_nb_rf = input$sm_rf, 
+                                                  para_nb_logit = input$sm_logit,
+                                                  para_nb_xgb = input$sm_xgb,
+                                                  para_threshold = input$slider_Threshold, 
+                                                  para_DB = DF_test, 
+                                                  para_var_selected = input$choiceIndicators)
         
-        test_DB_v2 <- add_var_model(test_DB, input$slider_Threshold)
-        test_DB_v3 <- test_DB_v2
-        test_DB_v3[,"Y"] <- factor(test_DB_v3$Y, levels = c(0,1), labels = ls_label)
-        test_DB_v3[,choice_A] <- factor(test_DB_v3$top_voteMajo, levels = c(0,1), labels = ls_label)
-        test_DB_v3[,choice_C] <- factor(test_DB_v3$top_percMean, levels = c(0,1), labels = ls_label)
-        test_DB_v3[,choice_B] <- factor(test_DB_v3$top_votePosi, levels = c(0,1), labels = ls_label)
         
-        x <- data.frame(
-            round(
-                table(test_DB_v3[,c("Y",input$choiceIndicators)])/dim(test_DB_v3)[1]*100,
-                2)
-        )
+        plot_cm_2 <- X_draw_plot_confusion_matrix(matrixPlot2)
         
-        x
+        print(plot_cm_2)
+        
+        
     })
+    
+    
+    
+    
+    filtered_data <- reactive({
+        
+        predire_les_defaillances_demain <- X_compute_confusion_matrix(
+            para_nb_rf = input$sm_rf, 
+            para_nb_logit = input$sm_logit,
+            para_nb_xgb = input$sm_xgb,
+            para_threshold = input$slider_Threshold, 
+            para_DB = predictionDemain, 
+            para_var_selected = input$choiceIndicators)
+        
+        pred_db2 <- predire_les_defaillances_demain %>% 
+            cbind(demain) %>% 
+            filter(predicted_labels == 1) %>% 
+            mutate(dep = substr(adr_depcom,1,2)) %>% 
+            filter(nj %in% input$filter_nj, 
+                   ape %in% input$filter_ape,
+                   dep %in% input$filter_dep) %>% 
+            select(siren, nj, ape, adr_depcom)
+        
+        pred_db2
+    })
+    
+    selected_departments <- reactive({
+        subset(region_departement, region == input$filter_region)$department
+    })
+    
+    
+    output$department_select <- renderUI({
+        pickerInput(
+            "filter_dep", "Choisissez un département :", 
+            choices = selected_departments(),
+            multiple = TRUE, # Autoriser la sélection unique
+            options = list(
+                `actions-box` = TRUE,
+                `live-search` = TRUE, # Activer la recherche
+                `style` = "btn-warning" # Changer le style du menu
+            )
+        )
+    }
+    )
+    
+    output$def_table4 <- DT::renderDataTable({
+        
+        datatable(filtered_data(), options = list(pageLength = 20, autoWidth = TRUE))
+        
+    })
+    
+    output$download_selected <- downloadHandler(
+        filename = function() {
+            paste0("data_",".csv") 
+        },
+        content = function(file) {
+            write.csv(filtered_data(), file, row.names = FALSE)
+        }
+    )    
     
 })

@@ -1,6 +1,9 @@
 
 library(DT)
 library(shiny)
+library(shinyWidgets)
+
+
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -8,7 +11,6 @@ ui <- fluidPage(
     navbarPage(
         "Défaillance des entreprises agricoles", 
         id  = "main_navbar",
-        
         tabPanel(id = "1_Statistics",
                  fluidRow(column(3,
                                  uiOutput("h2_title1"), class = "container")
@@ -70,6 +72,9 @@ ui <- fluidPage(
                              sliderInput("sm_rf", 
                                          "Nombre de forêts aléatoires:",
                                          min = 0, max = 10, value = 5),
+                             sliderInput("sm_xgb", 
+                                         "Nombre de gradient boosting:",
+                                         min = 0, max = 10, value = 5),
                              
                              selectInput("choiceIndicators",
                                          label = "Méthode d'agrégation des modèles", 
@@ -82,22 +87,22 @@ ui <- fluidPage(
                              
                              sliderInput("slider_Threshold", 
                                          "Seuil de probabilité",
-                                         min = 0, max = 0.5, step = 0.05,
+                                         min = 0, max = 0.5, step = 0.01,
                                          value = 0.2)
                          ),
                          mainPanel(
-                             p("Avec le modèle sélectionné (forêts aléatoires), nous allons restimer sur l'ensemble de la population (modulo un extrait des données qui nous permettra de voir si notre traitement ne fait pas de sur-appprentissage."),
+                             p("Le présent outil permet de combiner les modèles"),
                              br(), 
-                             p("Nous allons estimer plusieurs modèles et produire des combinaisons de modèles"),
-                             br(), 
-                             p("Sur la population :"),
-                             DT::dataTableOutput("mat_conf1"),
-                             br(), 
-                             p("Sur des données jamais vu : "),
-                             DT::dataTableOutput("mat_conf2"))
-                     )
-                 )
+                             p("sur les données déjà rencontrées : "),
+                             plotOutput("confusionMatrix_1"), 
+                             p("Sur des données jamais rencontrées : "),
+                             plotOutput("confusionMatrix_2") 
+                             
+                             
+                         )
+                     ))
         ), 
+        
         
         
         tabPanel(id = "4_Prev",
@@ -107,17 +112,35 @@ ui <- fluidPage(
                  mainPanel(
                      sidebarLayout(
                          sidebarPanel(
-                             width = 3, 
-                             selectInput("foo4",
-                                         label = "Choose", 
-                                         choices = c(1,2,3,4,5), 
-                                         selected = 3)
+                             width = 3,
+                             downloadButton("download_selected", "Télécharger les données filtrées"),
+                             br(),
+                             pickerInput("filter_region","Filtrer sur la région", 
+                                         choices=unique(region_departement$region), 
+                                         options = list(
+                                             `actions-box` = TRUE,
+                                             `live-search` = TRUE,
+                                             `style` = "btn-info"),
+                                         multiple = TRUE),
+                             uiOutput("department_select"),
+                             selectInput("filter_ape", 
+                                         label = "Filtre sur le code APE", 
+                                         choices = demain_ape$ape, 
+                                         selectize = TRUE,
+                                         multiple = TRUE, 
+                                         selected = demain_ape$ape),
+                             selectInput("filter_nj", 
+                                         label = "Filter sur la nature juridique", 
+                                         choices = demain_nj$nj, 
+                                         selectize = TRUE, 
+                                         multiple = TRUE, 
+                                         selected = demain_nj$nj)
                          ),
                          mainPanel(
-                             p("A partir du modèle sélectionné, nous pouvons estimé que les entreprises suivantes vont connaître des difficultés",
-                               br()),
-                             DT::dataTableOutput("def_table4"),
-                             p("Rajouter une carte de la france"))
+                             p("A partir du modèle sélectionné dans le troisième onglet, nous pouvons faire des prévisions sur les entreprises en difficulté demain."),
+                             br(),
+                             DT::dataTableOutput("def_table4")
+                         )
                      )
                  )
         )

@@ -2,7 +2,7 @@
 add_var_model <- function(para_db, para_threshold){
   
   c_db_TOP <- data.frame(para_db %>% select(-Y) > para_threshold)
-  c_db_PROP1 <- data.frame(rf_voteMajo = rowSums(c_db_TOP)/dim(real)[2])
+  c_db_PROP1 <- data.frame(rf_voteMajo = rowSums(c_db_TOP)/dim(para_db)[2])
   c_db_MOYPROB <- data.frame(perc_mean = rowMeans(para_db %>% select(-Y)))
   
   
