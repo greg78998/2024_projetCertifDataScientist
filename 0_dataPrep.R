@@ -11,9 +11,10 @@ matricule <- "N818398"
 if (matricule == "N818398") {
   path_USER <- paste0("C:/Users/",matricule,"/Desktop/projetBdF", sep = "")
 } 
-if (matricule == ""){
-  path_USER <- ""
+if (matricule == "X822385"){
+  path_USER <- "C:/Users/X822385/Desktop/DS/Projet"
 }
+
 
 # 0 | chargement des libraries  -----
 
@@ -61,6 +62,7 @@ chirps_data <- X1_creationCHIRPS_db(para_dt_fin = dt_placement,            # dat
                                     para_nbYear_scope = annee_nb)          # combien d'année 
 
 
+
 # Merger les tables 
 ### (dans un second temps, les données de marché seront utilisées)
 
@@ -77,7 +79,9 @@ DB <- agrfin_data %>%
   select(-c(date_min,top_defaillance, code_insee)) %>%
   rename(top_defaillance=top_defaillance2) %>% 
   left_join(region_departement %>% 
-              select(department, region), by = "department")
+              select(department, region), by = "department") %>% 
+  mutate(ent_age = as.numeric((dt - date_creation)/365)) %>% 
+  select(-date_creation)
 
 
 # Sélectionner des variables

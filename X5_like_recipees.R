@@ -126,7 +126,7 @@ Creation_new_var <- function(para_DB, para_dt_placement=dt_placement, para_str_s
 
 add_cumul_function <- function(para_db, para_interval, prefix,new_nom){
   
-  for (ii in seq(interval_month+1,interval_month+dim(para_db)[2]-para_interval)){
+  for (ii in seq(interval_month+1,interval_month+dim(para_db)[2]-(para_interval+1))){
     
     s <- seq(ii+1,ii+para_interval) 
     s_cal <- paste0(prefix, "_",s)

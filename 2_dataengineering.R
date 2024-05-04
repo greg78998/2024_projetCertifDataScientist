@@ -3,8 +3,8 @@ matricule <- "N818398"
 if (matricule == "N818398") {
   path_USER <- paste0("C:/Users/",matricule,"/Desktop/projetBdF", sep = "")
 } 
-if (matricule == ""){
-  path_USER <- ""
+if (matricule == "X822385"){
+  path_USER <- "C:/Users/X822385/Desktop/DS/Projet"
 }
 
 # 0 | chargement des libraries  -----
@@ -17,7 +17,7 @@ dt_placement <- readRDS(file = paste0(path_data_vf,"/","para_dt_placement.RDS"))
 interval_month <- readRDS( file = paste0(path_data_vf,"/","para_interval_month.RDS"))
 annee_nb <- readRDS( file = paste0(path_data_vf,"/","para_annee_nb.RDS"))
 
-DB_ori <- readRDS(paste0(path_data_vf,"/",dt_placement,"_DB_.RDS"))
+DB_ori <- readRDS(paste0(path_data_vf,"/",dt_placement,"_DB_.RDS"), )
 
 ### 1 - Mettre en page les variables qualitatives 
 
