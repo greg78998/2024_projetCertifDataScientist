@@ -1,4 +1,7 @@
 
+###################################################
+# NECESSITE DE LANCER LE PROGRAMME 3 AU PREALABLE #
+###################################################
 
 matricule <- "X822385"
 
@@ -12,10 +15,10 @@ if (matricule == "X822385"){
 # Chargement des utilisateurs 
 
 chargement_modeles <- TRUE
-nb_model <- 2
+nb_model <- 10
 
-forme_dt_ls <- c("simple","add","poly")  
-#forme_dt_ls <- c("simple")  
+forme_dt_ls <- c("simple","add_succ_surplus","add_succ_chocs","poly") 
+forme_dt  <- paste(forme_dt_ls, collapse = "_") # pour les dénomination des modèles
 
 
 # SIMPLE : Pas de feature engineering (sauf retraitement)
@@ -31,6 +34,7 @@ forme_dt_ls <- c("simple","add","poly")
 source(paste0(path_USER,"/pg_propre/","_before_chemins.R"))
 source(paste0(path_USER,"/pg_propre/","_before_libraries.R"))
 
+
 # 1 | chargement de la table + chargement des paramètres
 
 source(paste0(path_USER,"/pg_propre/","X3_MeF_predictionModels.R"))
@@ -39,80 +43,16 @@ dt_placement <- readRDS(file = paste0(path_data_vf,"/","para_dt_placement.RDS"))
 interval_month <- readRDS( file = paste0(path_data_vf,"/","para_interval_month.RDS"))
 annee_nb <- readRDS( file = paste0(path_data_vf,"/","para_annee_nb.RDS"))
 
-forme_dt  <- paste(forme_dt_ls, collapse = "_") # pour les dénomination des modèles
-
 dt_placement <- readRDS(file = paste0(path_data_vf,"/","para_dt_placement.RDS"))
 interval_month <- readRDS( file = paste0(path_data_vf,"/","para_interval_month.RDS"))
 annee_nb <- readRDS( file = paste0(path_data_vf,"/","para_annee_nb.RDS"))
 
-DB <- readRDS(paste0(path_data_vf,"/",dt_placement,"_DB_postRET.RDS"))          # = forme simple
-
-source(paste0(path_USER,"/pg_propre/","Y1_assemblageTables.R"))
-
-
-# 2 | Remise en page du dataframe 
-
-DB <- DB %>% 
-  select(-c(siren,dt)) %>% 
-  rename(Y = top_defaillance) %>%
-  select(-c(ea_ul)) # ligne qui va disparaître à terme
-
-need <- TRUE # Pour assurer la reproductivite
-if (need){
-  set.seed(1234)
-
-  data_split <- initial_split(DB, strata = Y, prop = 0.8)
-  
-  training <- training(data_split) # data frame qui permet de faire le premier découpage
-  test_set <- testing(data_split) # extraire le test set
-}
-
-# 3 | MODELE FINAL estimé sur l'ensemble des données (training=test_set+eval_set) POUR TROUVER LES HYPERPARAMETRES XGBOOST ET RANDOMFOREST
-
-#### creating and fitting a workflowset, evaluating of all wf in the wf_set
-xgb_mod <- boost_tree(mtry=tune(), min_n=tune())%>% #min_n=profondeur d'arbre, mtry=nb de feuilles
-  set_engine('xgboost')%>%
-  set_mode('classification')
-
-rf_mod <- rand_forest(trees=500,min_n=tune())%>% # trees=nd d'arbres, min_n=profondeur d'arbre
-  set_engine('ranger')%>%
-  set_mode('classification')
-
-wf_set <- workflow_set(
-    preproc = list(basic = rec),
-    models = list(rf= rf_mod, xgb = xgb_mod)
-    )
-
-set.seed(1234)
-res_wf_set <-
-  wf_set%>%
-  workflow_map(
-    resamples=folds,
-    metrics=metric_set(accuracy, roc_auc, recall),
-    grid=5,
-    fn="tune_grid",
-    verbose=T
-  )
-
-saveRDS(res_wf_set, file = paste0(path_pg_models_save,"/",forme_dt,"_wf_set.RDS"))
-# res_wf_set <- readRDS(file = paste0(path_pg_models_save,"/",forme_dt,"_wf_set.RDS"))
-rank_results(res_wf_set, rank_metric='roc_auc')
-
-#### estimation du modèle XGBOOST sur l'ensemble des données (training=test_set+eval_set) pour déterminer les paramètres
-best_model_xgb_training <- 
-  res_wf_set %>%
-  extract_workflow_set_result('basic_xgb')%>%
-  select_best(metric='roc_auc') # meilleurs hyperparamètres : grid_xgb <- data.frame(mtry = 81, min_n = 23)
-
-#### estimation du modèle RANDOM FOREST sur l'ensemble des données pour déterminer les paramètres
-best_model_rf_training <- 
-  res_wf_set %>%
-  extract_workflow_set_result('basic_rf')%>%
-  select_best(metric='roc_auc') # meilleurs hyperparamètres : grid_rf <- data.frame(trees = 808, min_n = 29) // je dois refaire tourner avec trees=500
+# ATTENTION, dépend de la forme choisie au programme 3 (où on fait les retraitements de DB)
+DB <- readRDS(paste0(path_data_vf,"/",dt_placement,"_DB_postRET.RDS")) 
 
 
 
-# 4 | ESTIMATION DES MODELES EN FONCTION DE NB_MODEL
+# 2 | CALCUL DES PREDICTIONS SUR TRAINING (DF_ENTRAINEMENT) ET SUR TEST (DF_TEST) + GESTION DU DE NB_MODEL
 training$Y <- factor(training$Y)
 test_set$Y <- factor(test_set$Y)
 train_set$Y <- factor(train_set$Y)
@@ -142,7 +82,7 @@ for (pho in 1:nb_model){
  
     saveRDS(res_wf_set_xgb, file = paste0(path_pg_models_save,"/",forme_dt,"_vf_xgb_n",pho,".RDS"))
     print("Ce modèle XG Boost est sauvegardé")
-
+    
     predictions_entrainement <- res_wf_set_xgb %>% collect_predictions()
     results_list_xgb[[pho]] <- list(predictions=predictions_entrainement)
     DF_entrainement[,paste0("xgb_",pho)] <- results_list_xgb[[pho]]$predictions[,c(".pred_1")]
@@ -165,7 +105,7 @@ for (pho in 1:nb_model){
 
 
 
-###### RANDOM_FOREST
+###### RANDOM_FOREST (JE NE L'AI PAS ENCORE LANCE DEPUIS QUE LE CODE A CHANGE... PREND DU TEMPS)
 
 wf_set_rf <- workflow_set(
   preproc = list(basic = rec),
@@ -239,14 +179,43 @@ for (pho in 1:nb_model){
   }
 }
 
-# Sauvegarde des DF_entrainement et DF_test pour l'application SHINY
+###### Sauvegarde des DF_entrainement et DF_test pour l'application SHINY
 saveRDS(DF_entrainement,
-        file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,"basesPREVISION_train",".RDS"))
+        file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_train",".RDS"))
 saveRDS(DF_test,
-        file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,"basesPREVISION_test",".RDS") )
+        file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_test",".RDS") )
 
 
-# Comparaison des métriques pour information
+
+# 3 | DIVERS ANALYSES SUR DF_TEST
+# DF_test <- readRDS( file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,"basesPREVISION_test",".RDS"))
+
+# Courbes ROC
+library(pROC)
+roc_data <- roc(Y~.,data=DF_test)
+plot(roc_data$xgb_1)
+
+roc_data_2 <- roc(DF_test$Y,DF_test$xgb_1)
+optimal_threshold_sensitivity <- coords(roc_data_2, "best", ret="threshold")
+print(optimal_threshold_sensitivity) # 0.006736428
+
+
+# Courbes en densité normalisé des prédictions pour Y=0 et Y=1
+DF_test$xgb_1_mean <- mean(DF_test$xgb_1)
+DF_test$xgb_1_sd <- sd(DF_test$xgb_1)
+DF_test$xgb_1_norm <- (DF_test$xgb_1 - DF_test$xgb_1_mean)/ DF_test$xgb_1_sd
+
+
+ggplot(DF_test, aes(x = xgb_1_norm, fill = factor(Y))) +
+  geom_density(alpha = 0.5) +
+  scale_fill_manual(values = c("blue", "red")) +
+  labs(title = "Densité des prédictions selon la valeur de Y",
+       x = "Prédictions (YP)",
+       y = "Densité") +
+  theme_minimal()
+
+
+# Comparaison des métriques des différents modèles
 DF_test$Y <- as.numeric(DF_test$Y)
 
 accuracy <- function(X,Y,seuil=0.5){
@@ -265,7 +234,10 @@ recall <- function(X,Y,seuil=0.5){
   vrai_positif / positif_real*100
 }
 
-apply(X = DF_test,2,accuracy,Y=DF_test$Y,seuil = 0.001)
+apply(X = DF_test,2,accuracy,Y=DF_test$Y) # seuil=0.5
+
+apply(X = DF_test,2,accuracy,Y=DF_test$Y,seuil = 0.01)
 
 apply(X = DF_test,2,recall,Y=DF_test$Y,seuil = 0.0055)
+
 
