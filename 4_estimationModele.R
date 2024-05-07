@@ -14,7 +14,7 @@ if (matricule == "X822385"){
 
 # Chargement des utilisateurs 
 
-chargement_modeles <- TRUE
+chargement_modeles <- FALSE
 nb_model <- 10
 
 forme_dt_ls <- c("simple","add_succ_surplus","add_succ_chocs","poly") 
@@ -93,6 +93,7 @@ log_mod <- logistic_reg()%>%
   set_mode('classification')
 
 
+
 for (pho in 1:nb_model){
   
   print(paste0("tour de boucle :",pho))
@@ -109,6 +110,8 @@ for (pho in 1:nb_model){
       fit(training)
   
     saveRDS(xgb_fit, file = paste0(path_pg_models_save,"/",forme_dt,"_vf_xgb_n",pho,".RDS"))
+  } else {
+    xgb_fit <- readRDS(paste0(path_pg_models_save,"/",forme_dt,"_vf_xgb_n",pho,".RDS"))
   }
   
   # ----------------------------------------------------------------------------
@@ -129,6 +132,8 @@ for (pho in 1:nb_model){
       fit(training)
     
     saveRDS(logit_fit, file = paste0(path_pg_models_save,"/",forme_dt,"_vf_logit_n",pho,".RDS"))
+    } else {
+      logit_fit <- readRDS(paste0(path_pg_models_save,"/",forme_dt,"_vf_logit_n",pho,".RDS"))
     }
     DF_entrainement[,paste("logit_mod_",pho, sep = "")] <- predict(logit_fit, training, type = "prob")[2]
     DF_test[,paste("logit_mod_",pho, sep = "")] <- predict(logit_fit, test_set, type = "prob")[2]
@@ -145,11 +150,13 @@ for (pho in 1:nb_model){
     rf_mod_fit <- ranger(Y ~ ., data=training, probability = TRUE)
     
     saveRDS(rf_mod_fit, file = paste0(path_pg_models_save,"/",forme_dt,"_vf_random_forest_n",pho,".RDS"))
+  } else {
+    rf_mod_fit <- readRDS(paste0(path_pg_models_save,"/",forme_dt,"_vf_random_forest_n",pho,".RDS"))
   }
   
   # ----------------------------------------------------------------------------
   
-  DF_entrainement[,paste("rf_mod_",pho, sep = "_")] <- predict(rf_mod_fit, training)[2]
+  DF_entrainement[,paste("rf_mod_",pho, sep = "_")] <- predict(rf_mod_fit, training)$predictions[,2]
   DF_test[,paste("rf_mod",pho, sep = "_")] <- predict(rf_mod_fit, test_set)$predictions[,2]
   
   
@@ -165,6 +172,12 @@ saveRDS(DF_test,
         file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_test",".RDS") )
 
 
+
+DF_entrainement <- readRDS(
+        file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_train",".RDS"))
+
+DF_test <- readRDS(
+        file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_test",".RDS") )
 
 
 
