@@ -331,11 +331,14 @@ for (i in 1:nrow(param_xgboost)) {
   print(metriques_pour_Shiny)
   
   
-  ###### Sauvegarde des DF_entrainement et DF_test pour l'application SHINY
+  ###### Sauvegarde des DF_entrainement, DF_test et metriques_pour_Shiny pour l'application SHINY
   saveRDS(DF_entrainement,
           file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_train",".RDS"))
   saveRDS(DF_test,
           file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_test",".RDS") )
+  saveRDS(metriques_pour_Shiny,
+          file = paste0(path_data_vf,"/","metriques_pour_Shiny.RDS") )
   
-  
-  
+  #DF_entrainement <- readRDS(file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_train",".RDS"))
+  #DF_test <- readRDS(file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_test",".RDS") )
+  #metriques_pour_Shiny <- readRDS(file = paste0(path_data_vf,"/","metriques_pour_Shiny.RDS") )
