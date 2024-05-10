@@ -17,7 +17,10 @@ shinyServer(function(input, output) {
     output$h2_title1 <- renderUI({
         h3(paste0("Statistiques", sep = ""))
     })
-    output$h2_title2 <- renderUI({
+    output$h2_title_Calibrage <- renderUI({
+        h3(paste0("Calibrage", sep = ""))
+    })
+        output$h2_title2 <- renderUI({
         h3(paste0("Choix de modèles", sep = ""))
     })
     output$h2_title3 <- renderUI({
@@ -26,8 +29,6 @@ shinyServer(function(input, output) {
     output$h2_title4 <- renderUI({
         h3(paste0("En difficulté demain?", sep = ""))
     })
-    
-    
     output$slider_ui_randomforest <- renderUI({
         if(input$top_slider_rf) {
             sliderInput("sm_rf", 
@@ -44,15 +45,7 @@ shinyServer(function(input, output) {
     })
     
     
-    
-    
-    
-    
-    
-    
-    
     output$tab1_PT <- DT::renderDataTable({
-        
         datatable(
             db_defaillance %>% pivot_wider(id_cols = annee, names_from = mois, values_from = nb_defaillance),
             caption = "Nombre de défaillance sur la période récente", 
@@ -162,5 +155,56 @@ shinyServer(function(input, output) {
             write.csv(filtered_data(), file, row.names = FALSE)
         }
     )    
+    
+    output$density_plot <- renderPlot({
+        # Récupérer les données de densité normalisées correspondant au learning rate sélectionné
+        selected_variable <- lr_rate_mapping$variable_name[lr_rate_mapping$learning_rate==input$learning_rate]
+        
+        # Récupérer les données de densité correspondant au nom de variable
+        selected_density <- DF_test[[selected_variable]]
+        
+        # Création du graphique
+        ggplot(DF_test, aes_string(x = selected_variable, fill = "factor(Y)")) + 
+            geom_density(alpha = 0.5) +
+            scale_fill_manual(values = c("blue", "red")) +
+            labs(title = paste0("Densité des prédictions normalisées selon Y pour learning rate de ", input$learning_rate),
+                 x = "Prédictions (YP)",
+                 y = "Densité") +
+            theme_minimal() +
+            theme(plot.title=element_text(size=20))
+    })
+    
+    output$density_plot_2 <- renderPlot({
+        # Récupérer les données de densité NON normalisées correspondant au learning rate sélectionné
+        selected_variable <- lr_rate_mapping$variable_name_2[lr_rate_mapping$learning_rate==input$learning_rate]
+        
+        # Récupérer les données de densité correspondant au nom de variable
+        selected_density <- DF_test[[selected_variable]]
+        
+        # Création du graphique
+        ggplot(DF_test, aes_string(x = selected_variable, fill = "factor(Y)")) + 
+            geom_density(alpha = 0.5) +
+            scale_fill_manual(values = c("blue", "red")) +
+            labs(title = paste0("Densité des prédictions selon Y pour learning rate de ", input$learning_rate),
+                 x = "Prédictions (YP)",
+                 y = "Densité") +
+            theme_minimal() +
+            theme(plot.title=element_text(size=20))
+    })
+    
+    # Réagir aux changements de la sélection du learning rate
+    observe({
+        # Calculer les métriques en fonction du learning rate sélectionné
+        #compute_metrics <- function(learning_rate){
+        #    selected_metrics <- metriques_pour_Shiny[metriques_pour_Shiny$learn_rate==learning_rate,]
+        #    return(selected_metrics)
+        #}
+        #selected_metrics <- compute_metrics(input$learning_rate)
+        
+        # Afficher les métriques
+        output$selected_metrics <- renderDataTable({
+            metriques_pour_Shiny
+        })
+    })
     
 })
