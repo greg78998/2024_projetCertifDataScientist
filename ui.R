@@ -163,7 +163,7 @@ ui <- fluidPage(
                                          selected = demain_nj$nj)
                          ),
                          mainPanel(
-                             p("A partir du modèle sélectionné dans le troisième onglet, nous pouvons faire des prévisions sur les entreprises en difficulté demain."),
+                             p("A partir du modèle sélectionné dans le quatrième onglet, nous pouvons faire des prévisions sur les entreprises en difficulté demain."),
                              br(),
                              DT::dataTableOutput("def_table4")
                          )
