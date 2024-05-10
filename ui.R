@@ -39,6 +39,34 @@ ui <- fluidPage(
                  )
         ),
         
+        tabPanel(
+            id = "1b_Calibrage",
+            fluidRow(column(3, uiOutput("h2_title_Calibrage"), class = "container")),
+            mainPanel(
+                sidebarLayout(
+                    sidebarPanel(
+                        width = 3,
+                        # Sélection du learning rate 
+                        selectInput("learning_rate", "Choisir Learning Rate pour les courbes de densité :",
+                                    choices = lr_rate_mapping$learning_rate, selected = "0.15")
+                    ),
+                    mainPanel(
+                        # Graphique de densité
+                        plotOutput("density_plot", height="400px", width="700px"),
+                        br(),
+                        plotOutput("density_plot_2", height="400px", width="700px"),
+                        br(),
+                        br(),
+                        br(),
+                        
+                        # Affichage des métriques en fonction du learning rate sélectionné
+                        h2("Métriques considérées"), 
+                        DT::dataTableOutput("selected_metrics")
+                    )
+                )
+            )
+        ),
+        
         tabPanel(id = "2_Models",
                  fluidRow(column(3,
                                  uiOutput("h2_title2"), class = "container")
@@ -103,8 +131,6 @@ ui <- fluidPage(
                      ))
         ), 
         
-        
-        
         tabPanel(id = "4_Prev",
                  fluidRow(column(3,
                                  uiOutput("h2_title4"), class = "container")
@@ -144,5 +170,6 @@ ui <- fluidPage(
                      )
                  )
         )
+
     )
 )
