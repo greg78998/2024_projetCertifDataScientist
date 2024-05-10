@@ -18,7 +18,7 @@ shinyServer(function(input, output) {
         h3(paste0("Statistiques", sep = ""))
     })
     output$h2_title_Calibrage <- renderUI({
-        h3(paste0("Calibrage", sep = ""))
+        h3(paste0("Calibrage du XGBoost", sep = ""))
     })
         output$h2_title2 <- renderUI({
         h3(paste0("Choix de modèles", sep = ""))
