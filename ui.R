@@ -39,8 +39,32 @@ ui <- fluidPage(
                  )
         ),
         
+        tabPanel(id = "2_Models",
+                 fluidRow(column(3,
+                                 uiOutput("h2_title2"), class = "container")
+                 ), 
+                 mainPanel(
+                     sidebarLayout(
+                         sidebarPanel(
+                             width = 3, 
+                             selectInput("foo2",
+                                         label = "Choose", 
+                                         choices = c(1,2,3,4,5), 
+                                         selected = 3)
+                         ),
+                         mainPanel( p("Onglet qui vise à expliciter la méthodologie suivie pour sélectionner les modèles ensuite utilisés"),
+                                    DT::dataTableOutput("def_table2"),
+                                    # Affichage des métriques en fonction du learning rate sélectionné
+                                    br(),
+                                    br(),
+                                    h3("Comparaison des roc_auc des différents modèles en fonction de la forme choisie :"),
+                                    DT::dataTableOutput("model_results_pour_Shiny"))
+                     )
+                 )
+        ), 
+        
         tabPanel(
-            id = "1b_Calibrage",
+            id = "2b_Calibrage",
             fluidRow(column(3, uiOutput("h2_title_Calibrage"), class = "container")),
             mainPanel(
                 sidebarLayout(
@@ -67,24 +91,6 @@ ui <- fluidPage(
             )
         ),
         
-        tabPanel(id = "2_Models",
-                 fluidRow(column(3,
-                                 uiOutput("h2_title2"), class = "container")
-                 ), 
-                 mainPanel(
-                     sidebarLayout(
-                         sidebarPanel(
-                             width = 3, 
-                             selectInput("foo2",
-                                         label = "Choose", 
-                                         choices = c(1,2,3,4,5), 
-                                         selected = 3)
-                         ),
-                         mainPanel( p("Onglet qui vise à expliciter la méthodologie suivie pour sélectionner les modèles ensuite utilisés"),
-                                    DT::dataTableOutput("def_table2"))
-                     )
-                 )
-        ), 
         
         tabPanel(id = "3_ModelsPREDICTIONS",
                  fluidRow(column(3,
