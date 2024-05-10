@@ -192,7 +192,7 @@ shinyServer(function(input, output) {
             theme(plot.title=element_text(size=20))
     })
     
-    # Réagir aux changements de la sélection du learning rate
+    # Onglet CALIBRAGE XGBoost : réagir aux changements de la sélection du learning rate (abandonné a priori)
     observe({
         # Calculer les métriques en fonction du learning rate sélectionné
         #compute_metrics <- function(learning_rate){
@@ -205,6 +205,15 @@ shinyServer(function(input, output) {
         output$selected_metrics <- renderDataTable({
             metriques_pour_Shiny
         })
+    })
+    
+    # Onglet Choix du modèle : afficher les métriques
+    output$model_results_pour_Shiny <- DT::renderDataTable({
+        datatable(model_results_pour_Shiny, options = list(
+            columnDefs = list(
+                list(targets = c(2,6), render = DT::JS("function(data, type, row, meta) { return type === 'display' ? parseFloat(data).toFixed(6) : data; }"))
+            )
+        ))
     })
     
 })
