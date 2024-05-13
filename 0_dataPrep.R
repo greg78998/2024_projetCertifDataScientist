@@ -62,10 +62,6 @@ chirps_data <- X1_creationCHIRPS_db(para_dt_fin = dt_placement,            # dat
                                     para_nbYear_scope = annee_nb)          # combien d'année 
 
 
-
-# Merger les tables 
-### (dans un second temps, les données de marché seront utilisées)
-
 # On rajoute les régions sur la base des département
 region_departement <- read_excel(paste0(path_data_,"/region_departement.xlsx", sep =""))
 names(region_departement) <- c("department","departement_name", "region")
@@ -80,15 +76,15 @@ DB <- agrfin_data %>%
   rename(top_defaillance=top_defaillance2) %>% 
   left_join(region_departement %>% 
               select(department, region), by = "department") %>% 
-  mutate(ent_age = as.numeric((dt - date_creation)/365)) %>% 
+  mutate(ent_age = as.numeric((dt - date_creation)/365), 
+         across(b500_moy, ~replace_na(., median(., na.rm=TRUE)))) %>% 
   select(-date_creation)
 
 
-# Sélectionner des variables
 
-
+print("contrôle des valeurs manquants")
+print("=> on ne veut que des colonnes complètes")
 sapply(DB, function(x) sum(is.na(x)))
-
 
 
 saveRDS(DB, file = paste0(path_data_vf,"/",dt_placement,"_DB_.RDS"))

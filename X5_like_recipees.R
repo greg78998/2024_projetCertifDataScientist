@@ -30,7 +30,7 @@ fc_transform_col <- function(para_DB, para_col, para_seuil){
 
 fc_transform_col_delete <- function(para_DB, para_col){
   
-  # fonction qui supprime la liste de variables
+  # fonction qui supprime la liste de variables qui est dans para_col
   #
   # @ para_DB : dataframe sur lequel on travaille 
   # @ para_col : liste des colonnes que nous allons supprimer  
@@ -39,10 +39,12 @@ fc_transform_col_delete <- function(para_DB, para_col){
   return(para_DB)
 }
 
-fc_transform_quali <- function(para_DB){
+fc_transform_quali <- function(para_DB,para_dt_placement =dt_placement){
   
   # fonction qui applique l'ensemble des transformation 
+  
   # @ para_DB : le dataframe sur lequel on travaille en input 
+  # @ para_dt_placement : la période qui traitée --> utilisé pour la sauvegarde
   
   # Création d'une cat sur la variable nj
   print("Transformation de la variable nj")
@@ -67,7 +69,7 @@ fc_transform_quali <- function(para_DB){
   transform_5 <- fc_transform_col_delete(transform_2, para_col = c("department"))
   
   # sauvegarder la table
-  saveRDS(transform_5, file = paste0(path_data_vf,"/",dt_placement,"_DB_postRET.RDS"))
+  saveRDS(transform_5, file = paste0(path_data_vf,"/",para_dt_placement,"_DB_postRET.RDS"))
   
   return(transform_5)
 }
@@ -97,9 +99,9 @@ MiseAuCarre <- function(para_DB,
 
 
 Creation_new_var <- function(para_DB, para_dt_placement=dt_placement, para_str_start, para_niv, para_newNameVar, para_abs){
-  #
+  
   # --> Fonction qui permet de créer de nouvelles variables engineering 
-  #
+  
   # @ para_DB : le dataframe qui sert d'input
   # @ para_dt_placement : permet de produire une table avec le bon prefix
   # @ para_str_start : la chaîne de caractère étudidée
@@ -124,7 +126,15 @@ Creation_new_var <- function(para_DB, para_dt_placement=dt_placement, para_str_s
   
 }
 
-add_cumul_function <- function(para_db, para_interval, prefix,new_nom){
+add_cumul_function <- function(para_db, para_interval, prefix,new_nom, para_dt_placement=dt_placement){
+  
+  # => Une fonction qui prend comme input une table avec des top (var dicho) qui regarde s'il y a une succession de chocs 
+  
+  # @ para_db : base input 
+  # @ para_interval : succ sur la base de x mois 
+  # @ prefix : prefix de la variable 
+  # @ new_nom : nouveau nom de la variable 
+  # @ para_dt_placement : date à laquelle on se place --> sert pour sauvegarder le fichier 
   
   for (ii in seq(interval_month+1,interval_month+dim(para_db)[2]-(para_interval+1))){
     
@@ -138,8 +148,8 @@ add_cumul_function <- function(para_db, para_interval, prefix,new_nom){
   
   para_db_vf <- para_db %>% select(all_of(ls_var_cons))
   
-  print(paste0("La table :",dt_placement,"_succ_",para_interval,"_",new_nom , " est sauvegardée."))
-  saveRDS(para_db_vf, file = paste0(path_data_vf,"/",dt_placement,"_succ_",para_interval,"_",new_nom,".RDS"))
+  print(paste0("La table :",para_dt_placement,"_succ_",para_interval,"_",new_nom , " est sauvegardée."))
+  saveRDS(para_db_vf, file = paste0(path_data_vf,"/",para_dt_placement,"_succ_",para_interval,"_",new_nom,".RDS"))
   
   return(para_db_vf)
 }
