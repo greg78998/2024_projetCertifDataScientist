@@ -25,16 +25,22 @@ Dans le cadre de la certification DataScientist, nous proposons un projet qui ch
   
 ### Description des différentes fonctions : 
 - **X_creation_matrix_confusion :**  construction d'une matrice de confusion + mise en dessin de la matrice
+
 Utilisée dans l'application
 - **X1_MeF_CHIRPS :** mise en forme des données de précipitation chirps
+
 Utilisée dans le programme 0 et le programme 5
 - **X2_MeF_AGRFIN :** mise en forme des données agricoles + défaillances
+
 Utilisée dans le programme 0 et le programme 5
 - **X3_MeF_predictionModels :** un fonction que l'on utilise dans l'application pour créer des variables supplémentaires (top_vote_majo, top_vote_positif, top_moyenne_prob)
+
 Utilisé dans l'application via les fonctions de **X_creation_matrix_confusion**
 - **X5_like_recipees :** des traitements de data engineering - creation d'une catégorie "autres", découpage de variables, mise en facteur
+
 Utilisée dans les programmes 3,4,5
 - **X6_assemblage_table :** une fonction qui permet de choisir en fonction des différentes options, la forme que va prendre les données. Plusieurs possibilités : simple (ou les données brutes modulo des petits retraitements), poly (ou les carrés des données de précipitations), add_surplus (il est tombé plus d'eau sur les derniers trois mois), add_extreme (cumul de chocs extrêmes)
+
 Utilisée dans les programmes 3,4,5
 
 ### Application rshiny 
