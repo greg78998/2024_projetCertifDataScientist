@@ -6,7 +6,7 @@
 
 ################################################################################
 
-matricule <- "X822385"
+matricule <- "N818398"
 
 if (matricule == "N818398") {
   path_USER <- paste0("C:/Users/",matricule,"/Desktop/projetBdF", sep = "")
@@ -29,62 +29,48 @@ source("X2_MeF_AGRFIN.R")
 # 0 | Chargement de paramètres 
 dt_placement <-  as.Date("2024-12-31")       # date à laquelle on se place
 interval_month <- 11                         # pour calculer le top_defaillance
-annee_nb <- 5 
+annee_nb <- 6
+nb_model <- 10
 
 TOP_RECONSTITUTION <- FALSE
-
-# production de la table CHIRPS
-
-if (TOP_RECONSTITUTION == TRUE){
-  # Programme pour générer la table chirps depuis les fichiers sur GitHub https://github.com/greg78998/bdfprojet_data
-  source("temp_CHIRPScreation.R")
-}
-
 
 
 
 
 # chargement de la table AGR_FIN
 
-agrfin_data <- X2_creationSIREN_db(para_dt_placement = dt_placement, 
-                                   para_interval = interval_month)
-  
+agrfin_data_futur <- X2_creationSIREN_db(para_dt_placement = dt_placement, 
+                                         para_interval = interval_month)
+
 # chargement de la table CHIRPS 
 
-chirps_data <- X1_creationCHIRPS_db(para_dt_fin = dt_placement,            # date à laquelle on se place
-                                    para_interval_month = interval_month,  # top_defaillance est calculé sur cette table
-                                    para_nbYear_scope = annee_nb)          # combien d'année 
+chirps_data_futur <- X1_creationCHIRPS_db(para_dt_fin = dt_placement,            # date à laquelle on se place
+                                          para_interval_month = interval_month,  # top_defaillance est calculé sur cette table
+                                          para_nbYear_scope = annee_nb)          # combien d'année 
 
-
-# Merger les tables 
-### (dans un second temps, les données de marché seront utilisées)
-
-# On rajoute les régions sur la base des département
 region_departement <- read_excel(paste0(path_data_,"/region_departement.xlsx", sep =""))
 names(region_departement) <- c("department","departement_name", "region")
 
 
 
-DB <- agrfin_data %>% 
+DB_futur_preparation <- agrfin_data_futur %>% 
   rename(code_insee = adr_depcom) %>%
-  left_join(chirps_data, by = c("code_insee", "dt")) %>%
+  left_join(chirps_data_futur, by = c("code_insee", "dt")) %>%
   mutate(department=as.factor(substr(code_insee,1,2))) %>%
-  select(-c(date_min,top_defaillance, code_insee,b500_moy)) %>%
+  select(-c(date_min,top_defaillance, code_insee)) %>%
   rename(top_defaillance=top_defaillance2) %>% 
   left_join(region_departement %>% 
               select(department, region), by = "department") %>% 
-  mutate(ent_age = as.numeric((dt - date_creation)/365)) %>% 
+  mutate(ent_age = as.numeric((dt - date_creation)/365),
+         across(b500_moy, ~replace_na(., median(., na.rm=TRUE)))) %>% 
   select(-date_creation)
+
 
 
 # Sauvegarde du modèle
 
-sapply(DB, function(x) sum(is.na(x)))
-saveRDS(DB, file = paste0(path_data_vf,"/",dt_placement,"_DB_.RDS"))
-
-
-# Pour estimer sur une nouvelle base 
-#saveRDS(DB, file = paste0(path_data_vf,"/","base_",dt_placement,".RDS"))
+sapply(DB_futur_preparation, function(x) sum(is.na(x)))
+saveRDS(DB_futur_preparation, file = paste0(path_data_vf,"/",dt_placement,"_DB_.RDS"))
 
 
 # Application du data engineering #################################################
@@ -143,5 +129,31 @@ DB_futur$Y <- factor(DB_futur$Y)
 DB_futur<- DB_futur %>%  filter(Y == 0)
 
 saveRDS(DB_futur, file = paste0(path_data_vf,"/",dt_placement,"_DB_.RDS"))
+
+DB_futur_pred <- DB_futur %>% select(Y)
+
+for (pho in 1:nb_model){
+  
+  print(paste0("tour de boucle : prediction sur données futures",pho))
+  
+  print("--> Lecture xgboost")
+  xgb_fit <- readRDS(paste0(path_pg_models_save,"/",forme_dt,"_vf_xgb_n",pho,".RDS"))
+  if (pho < 2){
+    print("--> Lecture logit")
+    logit_fit <- readRDS(paste0(path_pg_models_save,"/",forme_dt,"_vf_logit_n",pho,".RDS"))
+    DB_futur_pred[,paste("logit","mod",pho, sep = "_")] <- predict(logit_fit, DB_futur, type = "prob")[2]
+  }
+  print("--> Lecture random forest")
+  rf_mod_fit <- readRDS(paste0(path_pg_models_save,"/",forme_dt,"_vf_random_forest_n",pho,".RDS"))
+  
+  DB_futur_pred[,paste("xgb_mod_",pho, sep = "")] <- predict(xgb_fit, DB_futur, type = "prob")[2]
+  DB_futur_pred[,paste("rf_mod",pho, sep = "_")] <- predict(rf_mod_fit, DB_futur)$predictions[,2]
+  
+}
+
+saveRDS(DB_futur_pred, file = paste0(path_data_vf,"/",dt_placement,"_prediction_demain_defaillance.RDS"))
+
+
+
 
 
