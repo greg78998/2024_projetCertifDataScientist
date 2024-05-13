@@ -1,17 +1,3 @@
-library(dygraphs)
-library(ggplot2)
-library(dplyr)
-library(shiny)
-library(htmlwidgets)
-library(shiny)
-library(htmlwidgets)
-library(pivottabler)
-library(tidyr)
-library(caret)
-library(shinyWidgets)
-
-
-
 shinyServer(function(input, output) {
     
     output$h2_title1 <- renderUI({
@@ -20,7 +6,7 @@ shinyServer(function(input, output) {
     output$h2_title_Calibrage <- renderUI({
         h3(paste0("Calibrage du XGBoost", sep = ""))
     })
-        output$h2_title2 <- renderUI({
+    output$h2_title2 <- renderUI({
         h3(paste0("Choix de modèles", sep = ""))
     })
     output$h2_title3 <- renderUI({
@@ -107,23 +93,22 @@ shinyServer(function(input, output) {
             para_nb_logit = input$sm_logit,
             para_nb_xgb = input$sm_xgb,
             para_threshold = input$slider_Threshold, 
-            para_DB = predictionDemain, 
+            para_DB = DF_demain_pred, 
             para_var_selected = input$choiceIndicators)
         
         pred_db2 <- predire_les_defaillances_demain %>% 
-            cbind(demain) %>% 
+            cbind(DF_demain_brut) %>% 
             filter(predicted_labels == 1) %>% 
-            mutate(dep = substr(adr_depcom,1,2)) %>% 
             filter(nj %in% input$filter_nj, 
                    ape %in% input$filter_ape,
-                   dep %in% input$filter_dep) %>% 
-            select(siren, nj, ape, adr_depcom)
+                   dep_num_name %in% input$filter_dep) %>% 
+            select(siren, nj, ape,department, dep_num_name, region, ent_age, emails)
         
         pred_db2
     })
     
     selected_departments <- reactive({
-        subset(region_departement, region == input$filter_region)$department
+        subset(region_departement, region == input$filter_region)$dep_num_name
     })
     
     
@@ -136,7 +121,8 @@ shinyServer(function(input, output) {
                 `actions-box` = TRUE,
                 `live-search` = TRUE, # Activer la recherche
                 `style` = "btn-warning" # Changer le style du menu
-            )
+            ), 
+            selected = selected_departments()
         )
     }
     )

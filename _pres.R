@@ -1,6 +1,6 @@
 ## Avant le lancement de l'application 
 
-matricule <- "X822385"
+matricule <- "N818398"
 
 if (matricule == "N818398") {
   path_USER <- paste0("C:/Users/",matricule,"/Desktop/projetBdF", sep = "")
@@ -8,6 +8,19 @@ if (matricule == "N818398") {
 if (matricule == "X822385"){
   path_USER <- "C:/Users/X822385/Desktop/DS/Projet"
 }
+
+dt_placement <- readRDS(file = paste0(path_data_vf,"/","para_dt_placement.RDS"))
+dt_placement_futur <- as.Date("2024-12-31")
+forme_dt_ls <- c("simple","add_succ_surplus","add_succ_chocs","poly")
+forme_dt  <- paste(forme_dt_ls, collapse = "_")  
+
+
+
+ls_label <- c("Non en difficulté", "En difficulté")
+
+choice_A <- "Choix_Majoritaire"
+choice_B <- "Un_modèle_suffit"
+choice_C <- "Sur_moyenne_probabilités"
 
 # 0 | chargement des libraries  -----
 
@@ -21,7 +34,6 @@ source(paste0(path_USER,"/pg_propre/","X_creation_matrix_confusion.R"))
 
 # 1 | chargement de la table + chargement des paramètres
 
-
 db_defaillance <- haven::read_sas(data = paste0(path_data_vf,"/clean_donnees2.sas7bdat"), NULL) %>%
   filter(top_defaillance == "Y") %>% 
   mutate(date2 = as.Date(date_min)) %>% 
@@ -34,65 +46,41 @@ db_defaillance <- haven::read_sas(data = paste0(path_data_vf,"/clean_donnees2.sa
 DB <- readRDS(paste0(path_data_vf,"/","base_postRET.RDS"))
 DB_defaillance <- DB %>% filter(top_defaillance ==1 )
 
-# On vient chercher la table de prévision
-#n<- 100000
-#pourTravaux <- data.frame(Y = as.numeric(sample(c(0:10), size = n, replace=TRUE)>9))
-#
-#for (ii in 1:10){
-# pourTravaux[,paste0("rf_",ii)] <- rnorm(n = n, mean = 0.1,sd = 0.05)
-# pourTravaux[,paste0("xgb_",ii)] <- rnorm(n = n, mean = 0.1,sd = 0.05)
-# pourTravaux[,paste0("logit_",ii)] <- rnorm(n = n, mean = 0.1,sd = 0.05)
-#}
-#
-#DF_entrainement <- pourTravaux[1:n*0.8+1,]
-#DF_test <- pourTravaux[n*0.8+1:dim(pourTravaux)[1],]
 
-#DF_entrainement <- readRDS(file = paste0(path_data_vf,"/","basesPREVISION_train",".RDS") )
-#DF_test <- readRDS(file = paste0(path_data_vf,"/","basesPREVISION_test",".RDS") )
+# Import des table de prediction
 
-DF_entrainement <- readRDS(file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_train",".RDS"))
-DF_test <- readRDS(file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_test",".RDS") )
+DF_entrainement <- readRDS(paste(paste0(path_data_vf,"/",dt_placement),forme_dt,"basesPREVISION","train.RDS", sep = "_")) %>%
+  mutate(Y = as.integer(Y)-1)
+DF_test <- readRDS(paste(paste0(path_data_vf,"/",dt_placement),forme_dt,"basesPREVISION","test.RDS", sep = "_")) %>%
+  mutate(Y = as.integer(Y)-1)
 
-ls_label <- c("Non en difficulté", "En difficulté")
+DF_demain_pred <- readRDS(paste(paste0(path_data_vf,"/",dt_placement_futur),"prediction_demain_defaillance.RDS", sep = "_")) 
 
-choice_A <- "Choix_Majoritaire"
-choice_B <- "Un_modèle_suffit"
-choice_C <- "Sur_moyenne_probabilités"
+
 
 
 # Pour les predictions de demain
 
 region_departement <- read_excel(paste0(path_data_,"/region_departement.xlsx", sep =""))
 names(region_departement) <- c("department","departement_name", "region")
+region_departement$dep_num_name = paste(region_departement$department, region_departement$departement_name, sep = "-")
 
-demain <- haven::read_sas(data = paste0(path_data_vf,"/clean_donnees2.sas7bdat"), NULL) %>% 
-  mutate(department = substr(adr_depcom,1,2)) %>% 
-  left_join(region_departement, by = "department") %>%
-  select(siren, nj, ape,adr_depcom, region)
+# On importe le dataframe
+DF_demain_brut <- readRDS(paste(paste0(path_data_vf,"/",dt_placement_futur),"DB_.RDS", sep = "_")) %>%  
+  left_join(region_departement %>% select(department,departement_name), by = "department") %>%
+  mutate(dep_num_name = paste(department, departement_name, sep = "-"), 
+         emails = paste0("email",row_number(),"@adresse.fr")) %>% 
+  select(siren, nj, ape,department, dep_num_name, region, ent_age, emails) 
 
 
+# Pour construire la liste des menus
 
-
-demain_nj <- demain %>% 
+ demain_nj <- DF_demain_brut %>% 
   select(nj) %>% 
   distinct() %>% 
   arrange(nj)
-demain_ape <- demain %>% 
+demain_ape <- DF_demain_brut %>% 
   select(ape) %>% 
   distinct() %>% 
   arrange(ape)
-
-
-
-
-  
-yy <- dim(demain)[1]
-predictionDemain <- data.frame(Y = as.numeric(sample(c(0:10), size = yy, replace=TRUE)>9))
-
-for (ii in 1:10){
-  predictionDemain[,paste0("rf_",ii)] <- rnorm(n = yy, mean = 0.1,sd = 0.05)
-  predictionDemain[,paste0("xgb_",ii)] <- rnorm(n = yy, mean = 0.1,sd = 0.05)
-  predictionDemain[,paste0("logit_",ii)] <- rnorm(n = yy, mean = 0.1,sd = 0.05)
-}
-
 

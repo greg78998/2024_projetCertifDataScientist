@@ -1,42 +1,37 @@
 
-library(DT)
-library(shiny)
-library(shinyWidgets)
-
-
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
     theme = "bootstrap.css",
     navbarPage(
-        "Défaillance des entreprises agricoles", 
+        "Des entreprises agricoles en difficultés ?", 
         id  = "main_navbar",
-        tabPanel(id = "1_Statistics",
-                 fluidRow(column(3,
-                                 uiOutput("h2_title1"), class = "container")
-                 ), 
-                 mainPanel(
-                     sidebarLayout(
-                         sidebarPanel(
-                             width = 3, 
-                             selectInput("foo1",
-                                         label = "Choose", 
-                                         choices = c(1,2,3,4,5), 
-                                         selected = 3)
-                         ),
-                         
-                         mainPanel(
-                             p("#Agriculture  #changement climatique  # procedure collective"),
-                             br(), 
-                             br(),
-                             p("En difficulté : une entreprise agricole qui se voit concerné par une procédure collecte dans les x derniers mois (source : tribunaux de commerce)."),
-                             br(), 
-                             br(), 
-                             p("Ce présent projet vise à étudier l'impact des chocs climatiques sur le déclenchement de procédure collective des entreprises agricoles."),
-                             
-                             DT::dataTableOutput("tab1_PT"))
-                     )
-                 )
+        tabPanel(
+            id = "1_Statistics",
+            fluidRow(column(3,
+                            uiOutput("h2_title1"), class = "container")), 
+            mainPanel(
+                sidebarLayout(
+                    sidebarPanel(
+                        width = 3, 
+                        selectInput("foo1",
+                                    label = "Choose", 
+                                    choices = c(1,2,3,4,5), 
+                                    selected = 3)
+                    ),
+                    
+                    mainPanel(
+                        p("#Agriculture  #changement climatique  # procedure collective"),
+                        br(), 
+                        br(),
+                        p("En difficulté : une entreprise agricole qui se voit concerné par une procédure collecte dans les x derniers mois (source : tribunaux de commerce)."),
+                        br(), 
+                        br(), 
+                        p("Ce présent projet vise à étudier l'impact des chocs climatiques sur le déclenchement de procédure collective des entreprises agricoles."),
+                        
+                        DT::dataTableOutput("tab1_PT"))
+                )
+            )
         ),
         
         tabPanel(id = "2_Models",
@@ -121,7 +116,7 @@ ui <- fluidPage(
                              
                              sliderInput("slider_Threshold", 
                                          "Seuil de probabilité",
-                                         min = 0, max = 0.5, step = 0.01,
+                                         min = 0, max = 0.5, step = 0.001,
                                          value = 0.2)
                          ),
                          mainPanel(
@@ -153,7 +148,8 @@ ui <- fluidPage(
                                              `actions-box` = TRUE,
                                              `live-search` = TRUE,
                                              `style` = "btn-info"),
-                                         multiple = TRUE),
+                                         multiple = TRUE, 
+                                         selected = unique(region_departement$region)),
                              uiOutput("department_select"),
                              selectInput("filter_ape", 
                                          label = "Filtre sur le code APE", 
@@ -176,6 +172,6 @@ ui <- fluidPage(
                      )
                  )
         )
-
+        
     )
 )
