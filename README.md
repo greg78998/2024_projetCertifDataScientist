@@ -48,3 +48,20 @@ Utilisée dans les programmes 3,4,5
 - xxx
 - ui : user interface
 - serveur : permet les calculs
+
+### Restants à faire 
+- Statistiques :
+- --> rajouter un deux graphiques avec les principales variables JM ggplot() + facetwrap (données financières, ape, catégorie juridique)
+- --> nombre de défaillances
+- --> exploitation des données météo
+- --> 
+- Choix de modèles
+- --> GH : faire tourner la validation croisée
+- --> JM : rajout d'une colonne avec la forme des données (simple, simple + poly...)
+  Calibrage :
+  --> Rien à faire
+  Résultats :
+  --> GH  : Rajout un onglet pour explorer les faux négatifs (train / test)
+  --> Courbe de densité
+  En difficultés demain :
+  --> rajouter les libellés des cj, ape
