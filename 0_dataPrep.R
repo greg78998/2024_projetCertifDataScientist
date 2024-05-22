@@ -54,7 +54,7 @@ if (TOP_RECONSTITUTION == TRUE){
 
 agrfin_data <- X2_creationSIREN_db(para_dt_placement = dt_placement, 
                                    para_interval = interval_month)
-  
+
 # chargement de la table CHIRPS 
 
 chirps_data <- X1_creationCHIRPS_db(para_dt_fin = dt_placement,            # date à laquelle on se place
