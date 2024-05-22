@@ -21,10 +21,10 @@ ui <- fluidPage(
                     ),
                     
                     mainPanel(
-                        p("#Agriculture  #changement climatique  # procedure collective"),
+                        p(uiOutput("sous_texte_1")),
                         br(), 
                         br(),
-                        p("En difficulté : une entreprise agricole qui se voit concerné par une procédure collecte dans les x derniers mois (source : tribunaux de commerce)."),
+                        p("En difficulté : une entreprise agricole qui se voit concerné par une procédure collecte dans les 12 derniers mois (source : tribunaux de commerce)."),
                         br(), 
                         br(), 
                         p("Ce présent projet vise à étudier l'impact des chocs climatiques sur le déclenchement de procédure collective des entreprises agricoles."),
@@ -48,9 +48,6 @@ ui <- fluidPage(
                                          selected = 3)
                          ),
                          mainPanel( p("Onglet qui vise à expliciter la méthodologie suivie pour sélectionner les modèles ensuite utilisés"),
-                                    DT::dataTableOutput("def_table2"),
-                                    # Affichage des métriques en fonction du learning rate sélectionné
-                                    br(),
                                     br(),
                                     h3("Comparaison des roc_auc des différents modèles en fonction de la forme choisie :"),
                                     DT::dataTableOutput("model_results_pour_Shiny"))
@@ -125,9 +122,9 @@ ui <- fluidPage(
                              p("sur les données déjà rencontrées : "),
                              plotOutput("confusionMatrix_1"), 
                              p("Sur des données jamais rencontrées : "),
-                             plotOutput("confusionMatrix_2") 
-                             
-                             
+                             plotOutput("confusionMatrix_2"), 
+                             p("Explorer les mal-predits"), 
+                             downloadButton("download_selected_explore_mal_predit", "Données mal classées")
                          )
                      ))
         ), 

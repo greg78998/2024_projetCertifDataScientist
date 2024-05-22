@@ -3,11 +3,12 @@ shinyServer(function(input, output) {
     output$h2_title1 <- renderUI({
         h3(paste0("Statistiques", sep = ""))
     })
-    output$h2_title_Calibrage <- renderUI({
-        h3(paste0("Calibrage du XGBoost", sep = ""))
-    })
+    
     output$h2_title2 <- renderUI({
         h3(paste0("Choix de modèles", sep = ""))
+    })
+    output$h2_title_Calibrage <- renderUI({
+        h3(paste0("Calibrage du XGBoost", sep = ""))
     })
     output$h2_title3 <- renderUI({
         h3(paste0("Résultats", sep = ""))
@@ -15,6 +16,15 @@ shinyServer(function(input, output) {
     output$h2_title4 <- renderUI({
         h3(paste0("En difficulté demain?", sep = ""))
     })
+    
+    output$sous_texte_1 <- renderUI({
+        h3(paste0("#Agriculture#changementClimatique#procedureCollective", sep = ""))
+    })
+    
+    
+    
+    
+    
     output$slider_ui_randomforest <- renderUI({
         if(input$top_slider_rf) {
             sliderInput("sm_rf", 
@@ -29,6 +39,12 @@ shinyServer(function(input, output) {
                         min = 0, max = 2, value = 1)
         } 
     })
+    
+    
+    
+    
+    
+    
     
     
     output$tab1_PT <- DT::renderDataTable({
@@ -49,7 +65,6 @@ shinyServer(function(input, output) {
     
     output$confusionMatrix_1 <- renderPlot({
         
-        
         matrixPlot1 <- X_compute_confusion_matrix(para_nb_rf = input$sm_rf, 
                                                   para_nb_logit = input$sm_logit, 
                                                   para_nb_xgb = input$sm_xgb,
@@ -62,11 +77,9 @@ shinyServer(function(input, output) {
         
         print(plot_cm_1)
         
-        
     })
     
     output$confusionMatrix_2 <- renderPlot({
-        
         
         matrixPlot2 <- X_compute_confusion_matrix(para_nb_rf = input$sm_rf, 
                                                   para_nb_logit = input$sm_logit,
@@ -79,7 +92,6 @@ shinyServer(function(input, output) {
         plot_cm_2 <- X_draw_plot_confusion_matrix(matrixPlot2)
         
         print(plot_cm_2)
-        
         
     })
     
@@ -112,6 +124,7 @@ shinyServer(function(input, output) {
     })
     
     
+    
     output$department_select <- renderUI({
         pickerInput(
             "filter_dep", "Choisissez un département :", 
@@ -124,8 +137,7 @@ shinyServer(function(input, output) {
             ), 
             selected = selected_departments()
         )
-    }
-    )
+    })
     
     output$def_table4 <- DT::renderDataTable({
         
@@ -142,7 +154,40 @@ shinyServer(function(input, output) {
         }
     )    
     
+    df_explore_FT <- reactive({
+        
+        xx <- X_compute_confusion_matrix(para_nb_rf = input$sm_rf, 
+                                         para_nb_logit = input$sm_logit,
+                                         para_nb_xgb = input$sm_xgb,
+                                         para_threshold = input$slider_Threshold, 
+                                         para_DB = DF_test, 
+                                         para_var_selected = input$choiceIndicators)
+        
+        explore_FT <- test_set %>% bind_cols(xx) %>%
+            select(-c(Y,dt)) %>%
+            filter(predicted_labels == 0 & true_labels == 1)
+        
+        explore_FT
+    })
+    
+    output$exploration_result <- DT::renderDataTable({
+        datatable(df_explore_FT(), 
+                  options = list(pageLength = 20, 
+                                 autoWidth = TRUE))
+    })
+    
+    output$download_selected_explore_mal_predit <- downloadHandler(
+        filename = function() {
+            paste0("donnees_mal_predite",".csv") 
+        },
+        content = function(file) {
+            write.csv(df_explore_FT(), file, row.names = FALSE)
+        }
+    )    
+    
+    
     output$density_plot <- renderPlot({
+        
         # Récupérer les données de densité normalisées correspondant au learning rate sélectionné
         selected_variable <- lr_rate_mapping$variable_name[lr_rate_mapping$learning_rate==input$learning_rate]
         
