@@ -1,6 +1,6 @@
-## Avant le lancement de l'application 
+## Avant le lancement de l'application
 
-matricule <- "N818398"
+matricule <- "X822385"
 
 if (matricule == "N818398") {
   path_USER <- paste0("C:/Users/",matricule,"/Desktop/projetBdF", sep = "")
@@ -44,7 +44,27 @@ db_defaillance <- haven::read_sas(data = paste0(path_data_vf,"/clean_donnees2.sa
   summarize(nb_defaillance = n())
 
 DB_forGraph <- readRDS(paste0(path_data_vf,"/","base_postRET.RDS"))
-DB_defaillance <- DB %>% filter(top_defaillance ==1 )
+
+# Données pour l'onglet Statistiques
+DB_defaillance <- DB_forGraph %>% filter(top_defaillance ==1 )
+
+# Comparaison des défaillances entre le fichier du SIETE et Webstat 
+compar_siete_webstat <- data.frame(
+  Annee=c(2016,2017,2018,2019,2020,2021,2022,2023),
+  Defaillances_SIETE=c(246,235,282,418,359,553,619,617),
+  Defaillances_WEBSTAT=c(1444,1528,1419,1414,940,1061,1206,1285))
+
+compar_siete_webstat_2 <- pivot_longer(compar_siete_webstat, cols = starts_with("Defaillances"), 
+                                       names_to = "Source", values_to = "Defaillances")
+
+
+# Matrices de corrélation avant et après suppression de certaines var fi 
+cor_matrix_avt <- readRDS(file = paste0(path_data_vf,"/","cor_matrix_avt.RDS"))
+cor_matrix_aps <- readRDS(file = paste0(path_data_vf,"/","cor_matrix_aps.RDS"))
+
+
+# Données pour Boxplots des var fi avant et après retraitements des obs très atypiques
+DB_stats <- readRDS(paste0(path_data_vf,"/",dt_placement,"_DB_avt_stats.RDS")) # on cherche DB avant retraitements stats
 
 
 # Import des table de prediction
@@ -63,6 +83,11 @@ lr_rate_mapping <- readRDS(file = paste0(path_data_vf,"/","lr_rate_mapping.RDS")
 
 model_results_pour_Shiny <- readRDS(file = paste0(path_data_vf,"/","simple_add_succ_surplus_add_succ_chocs_poly_model_results_pour_Shiny.RDS") )
 
+
+# Import du modèle XGB ajusté aux données d'apprentissage pour rechercher l'importance des variables
+xgb_fit <- readRDS(file = paste0(path_pg_models_save,"/",forme_dt,"_vf_xgb_n",1,".RDS"))
+model <- extract_fit_parsnip(xgb_fit)
+importance_plot <- vip(model, num_features=20, geom="col", horiz=TRUE, aesthetics = list(fill="steelblue"))
 
 
 # Pour les predictions de demain
