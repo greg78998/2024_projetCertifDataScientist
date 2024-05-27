@@ -1,4 +1,4 @@
-para_installpackages <- FALSE 
+para_installpackages <- FALSE
 
 
 if (para_installpackages == TRUE) {
@@ -9,6 +9,9 @@ if (para_installpackages == TRUE) {
   install.packages("GGally", type = "binary")
   install.packages("naniar", type = "binary")
   install.packages("glmnet", type = "binary")
+  install.packages("shinyWidgets", type="binary")
+  install.packages("DT", type="binary")
+  install.packages("vip", type="binary")
   
 }
 
@@ -39,3 +42,10 @@ library(tidyverse)
 library(ranger)
 library(xgboost)
 library(glmnet)
+library(pROC)
+
+# Packages pour Shiny 
+library(shinyWidgets)
+library(DT)
+library(vip)
+
