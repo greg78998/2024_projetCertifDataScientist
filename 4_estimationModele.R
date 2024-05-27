@@ -9,12 +9,12 @@ if (matricule == "X822385"){
 
 # Chargement des utilisateurs 
 
-chargement_modeles <- TRUE
+chargement_modeles <- TRUE 
 nb_model <- 1
 
 forme_dt_ls <- c("simple","add_succ_surplus","add_succ_chocs","poly") 
 forme_dt  <- paste(forme_dt_ls, collapse = "_") # pour les dénomination des modèles
-
+dt_placement <-  as.Date("2023-12-31")
 
 # SIMPLE : Pas de feature engineering (sauf retraitement)
 # ADD : Ajout de variables            (ajout de variables)
@@ -44,11 +44,12 @@ annee_nb <- readRDS( file = paste0(path_data_vf,"/","para_annee_nb.RDS"))
 DB <- X6_construction_base(forme_dt_ls,para_succ_nb_periode = 3) # output du programme 2, comme ça pas besoin de le relancer
 
 DB <- DB %>% 
-  select(-c(siren,dt,ea_ul,b500_moy)) %>% # je retire "ea_ul" qui n'a plus d'utilité (var quali : region, nj_ret, ape_ret, ent_age_ret)
+  select(-c(siren,dt,ea_ul)) %>% # je retire "ea_ul" qui n'a plus d'utilité (var quali : region, nj_ret, ape_ret, ent_age_ret)
   rename(Y = top_defaillance) %>% 
   mutate(Y = factor(Y))
 
 
+names(DB)
 need <- TRUE    # Pour assurer la reproductivité 
 if (need){
   set.seed(1234)
@@ -65,13 +66,13 @@ if (need){
 }
 
 rec <- recipe(data = training, Y~.) %>%
-  step_dummy(region) %>%
-  step_dummy(nj_ret) %>%
   step_dummy(ape_ret) %>%
+  step_dummy(nj_ret) %>%
+  step_dummy(region) %>%
   step_dummy(ent_age_ret)
 
-# 2 | CALCUL DES PREDICTIONS SUR TRAINING (DF_ENTRAINEMENT) ET SUR TEST (DF_TEST) + GESTION DU DE NB_MODEL
 
+# 2 | CALCUL DES PREDICTIONS SUR TRAINING (DF_ENTRAINEMENT) ET SUR TEST (DF_TEST) + GESTION DU DE NB_MODEL
 
 ##### XGBOOST
 results_list_xgb <- list()
@@ -105,11 +106,12 @@ for (pho in 1:nb_model){
   } else {
     xgb_fit <- readRDS(paste0(path_pg_models_save,"/",forme_dt,"_vf_xgb_n",pho,".RDS"))
   }
-  
+
   # ----------------------------------------------------------------------------
   
   DF_entrainement[,paste("xgb_mod_",pho, sep = "")] <- predict(xgb_fit, training, type = "prob")[2]
   DF_test[,paste("xgb_mod_",pho, sep = "")] <- predict(xgb_fit, test_set, type = "prob")[2]
+
 
   if (pho < 2){
     if (chargement_modeles == TRUE){
@@ -131,9 +133,10 @@ for (pho in 1:nb_model){
     DF_test[,paste("logit_mod_",pho, sep = "")] <- predict(logit_fit, test_set, type = "prob")[2]
   }
 
+
     # ----------------------------------------------------------------------------
-  
-  if (chargement_modeles == TRUE){
+
+    if (chargement_modeles == TRUE){
     
     print(paste0("Entrainement randomForest n°",pho, sep= ""))
     
@@ -148,20 +151,28 @@ for (pho in 1:nb_model){
 
   # ----------------------------------------------------------------------------
   
-  DF_entrainement[,paste("rf_mod_",pho, sep = "_")] <- predict(rf_mod_fit, training)[2]
-  DF_test[,paste("rf_mod",pho, sep = "_")] <- predict(rf_mod_fit, test_set)$predictions[,2]
-  
+  DF_entrainement[,paste("rf_mod_",pho, sep = "")] <- predict(rf_mod_fit, training)$predictions[,2]
+  DF_test[,paste("rf_mod",pho, sep = "")] <- predict(rf_mod_fit, test_set)$predictions[,2]
+ 
 }
 
+
+
+# Transformer les valeurs de Y en 0 et 1 (à faire en dehors d'une boucle)
+#DF_entrainement$Y <- as.numeric(DF_entrainement$Y)
+#DF_entrainement$Y <- ifelse(DF_entrainement$Y == 2, 1, 0)
+#DF_test$Y <- as.numeric(DF_test$Y)
+#DF_test$Y <- ifelse(DF_test$Y == 2, 1, 0)
+
 ###### Sauvegarde des DF_entrainement et DF_test pour l'application SHINY
-#saveRDS(DF_entrainement,
-#        file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_train",".RDS"))
-#saveRDS(DF_test,
-#        file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_test",".RDS") )
+saveRDS(DF_entrainement,
+        file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_train",".RDS"))
+saveRDS(DF_test,
+        file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_test",".RDS") )
 
 #DF_entrainement <- readRDS(file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_train",".RDS"))
 #DF_test <- readRDS(file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_test",".RDS") )
-
+#rm(DF_test,DF_entrainement)
 
 
 # 3 | DIVERSES ANALYSES SUR DF_TEST POUR SHINY
@@ -173,10 +184,11 @@ param_xgboost <- data.frame(
 )
 
 
+
 ##### XGBOOST
 results_list_xgb <- list()
-DF_entrainement <- data.frame(Y = training$Y)
-DF_test <- data.frame(Y = test_set$Y)
+DF_entrainement_S <- data.frame(Y = training$Y)
+DF_test_S <- data.frame(Y = test_set$Y)
 set.seed(1)
 
 # Créer une fonction pour entraîner un modèle avec des paramètres spécifiques
@@ -205,10 +217,10 @@ for (pho in 1:nrow(param_xgboost)) {
   xgb_fit <- calibrage_shiny(param_xgboost[pho, ])
   
   # Obtenir les prédictions sur l'ensemble d'entraînement
-  DF_entrainement[, paste("xgb_mod_", pho, sep = "")] <- predict(xgb_fit, training, type = "prob")[, 2]
+  DF_entrainement_S[, paste("xgb_mod_", pho, sep = "")] <- predict(xgb_fit, training, type = "prob")[, 2]
   
   # Obtenir les prédictions sur l'ensemble de test
-  DF_test[, paste("xgb_mod_", pho, sep = "")] <- predict(xgb_fit, test_set, type = "prob")[, 2]
+  DF_test_S[, paste("xgb_mod_", pho, sep = "")] <- predict(xgb_fit, test_set, type = "prob")[, 2]
 }
 
 # Courbes ROC
@@ -220,17 +232,17 @@ for (pho in 1:nrow(param_xgboost)) {
 # Boucle sur les différentes combinaisons de paramètres dans param_xgboost
 for (i in 1:nrow(param_xgboost)) {
   # Calcul des densités normalisées pour Y=0
-  DF_test[DF_test$Y==0, paste0("xgb_mod_", i, "_mean_Y0")] <- mean(DF_test[DF_test$Y==0, paste0("xgb_mod_", i)])
-  DF_test[DF_test$Y==0, paste0("xgb_mod_", i, "_sd_Y0")] <- sd(DF_test[DF_test$Y==0, paste0("xgb_mod_", i)])
-  DF_test[DF_test$Y==0, paste0("xgb_mod_", i, "_norm")] <- (DF_test[DF_test$Y==0, paste0("xgb_mod_", i)] - DF_test[DF_test$Y==0, paste0("xgb_mod_", i, "_mean_Y0")]) / DF_test[DF_test$Y==0, paste0("xgb_mod_", i, "_sd_Y0")]
+  DF_test_S[DF_test_S$Y==0, paste0("xgb_mod_", i, "_mean_Y0")] <- mean(DF_test_S[DF_test_S$Y==0, paste0("xgb_mod_", i)])
+  DF_test_S[DF_test_S$Y==0, paste0("xgb_mod_", i, "_sd_Y0")] <- sd(DF_test_S[DF_test_S$Y==0, paste0("xgb_mod_", i)])
+  DF_test_S[DF_test_S$Y==0, paste0("xgb_mod_", i, "_norm")] <- (DF_test_S[DF_test_S$Y==0, paste0("xgb_mod_", i)] - DF_test_S[DF_test_S$Y==0, paste0("xgb_mod_", i, "_mean_Y0")]) / DF_test_S[DF_test_S$Y==0, paste0("xgb_mod_", i, "_sd_Y0")]
   
   # Calcul des densités normalisées pour Y=1
-  DF_test[DF_test$Y==1, paste0("xgb_mod_", i, "_mean_Y1")] <- mean(DF_test[DF_test$Y==1, paste0("xgb_mod_", i)])
-  DF_test[DF_test$Y==1, paste0("xgb_mod_", i, "_sd_Y1")] <- sd(DF_test[DF_test$Y==1, paste0("xgb_mod_", i)])
-  DF_test[DF_test$Y==1, paste0("xgb_mod_", i, "_norm")] <- (DF_test[DF_test$Y==1, paste0("xgb_mod_", i)] - DF_test[DF_test$Y==1, paste0("xgb_mod_", i, "_mean_Y1")]) / DF_test[DF_test$Y==1, paste0("xgb_mod_", i, "_sd_Y1")]
+  DF_test_S[DF_test_S$Y==1, paste0("xgb_mod_", i, "_mean_Y1")] <- mean(DF_test_S[DF_test_S$Y==1, paste0("xgb_mod_", i)])
+  DF_test_S[DF_test_S$Y==1, paste0("xgb_mod_", i, "_sd_Y1")] <- sd(DF_test_S[DF_test_S$Y==1, paste0("xgb_mod_", i)])
+  DF_test_S[DF_test_S$Y==1, paste0("xgb_mod_", i, "_norm")] <- (DF_test_S[DF_test_S$Y==1, paste0("xgb_mod_", i)] - DF_test_S[DF_test_S$Y==1, paste0("xgb_mod_", i, "_mean_Y1")]) / DF_test_S[DF_test_S$Y==1, paste0("xgb_mod_", i, "_sd_Y1")]
 
   # Affichage des courbes de densité normalisées
-  print(ggplot(DF_test, aes_string(x = paste0("xgb_mod_", i, "_norm"), fill = "factor(Y)")) + 
+  print(ggplot(DF_test_S, aes_string(x = paste0("xgb_mod_", i, "_norm"), fill = "factor(Y)")) + 
           geom_density(alpha = 0.5) +
           scale_fill_manual(values = c("blue", "red")) +
           labs(title = paste0("Densité des prédictions normalisées selon Y pour learning rate de ", param_xgboost[i,"learn_rate"]),
@@ -239,7 +251,7 @@ for (i in 1:nrow(param_xgboost)) {
           theme_minimal())
   
   # Affichage des courbes de densité NON normalisées
-  print(ggplot(DF_test, aes_string(x = paste0("xgb_mod_", i), fill = "factor(Y)")) + 
+  print(ggplot(DF_test_S, aes_string(x = paste0("xgb_mod_", i), fill = "factor(Y)")) + 
           geom_density(alpha = 0.5) +
           scale_fill_manual(values = c("blue", "red")) +
           labs(title = paste0("Densité des prédictions selon Y pour learning rate de ", param_xgboost[i,"learn_rate"]),
@@ -254,10 +266,13 @@ for (i in 1:nrow(param_xgboost)) {
     variable_name=c("xgb_mod_1_norm","xgb_mod_2_norm","xgb_mod_3_norm","xgb_mod_4_norm","xgb_mod_5_norm"),
     variable_name_2=c("xgb_mod_1","xgb_mod_2","xgb_mod_3","xgb_mod_4","xgb_mod_5")
   )
+  saveRDS(lr_rate_mapping,
+          file = paste0(path_data_vf,"/","lr_rate_mapping.RDS"))
+
 
   # Transformer les valeurs de Y en 0 et 1 (à faire en dehors d'une boucle)
-  DF_test$Y <- as.numeric(DF_test$Y)
-  DF_test$Y <- ifelse(DF_test$Y == 2, 1, 0)
+  DF_test_S$Y <- as.numeric(DF_test_S$Y)
+  DF_test_S$Y <- ifelse(DF_test_S$Y == 2, 1, 0)
   
   
   # Initialisation de la table pour stocker les métriques pour Shiny (à faire en dehors d'une boucle)
@@ -293,19 +308,19 @@ for (i in 1:nrow(param_xgboost)) {
     min_n <- param_xgboost[i, "min_n"]
     
     # Calcul des prédictions du modèle actuel
-    predictions <- DF_test[, paste0("xgb_mod_", i)]
+    predictions <- DF_test_S[, paste0("xgb_mod_", i)]
     
     # Calcul des métriques pour le modèle actuel
-    acc <- accuracy(X=predictions, Y=DF_test$Y)
-    recall_0.07 <- recall(X=predictions, Y=DF_test$Y, seuil = 0.07)
-    recall_0.06 <- recall(X=predictions, Y=DF_test$Y, seuil = 0.06)
-    recall_0.05 <- recall(X=predictions, Y=DF_test$Y, seuil = 0.05)
-    recall_0.04 <- recall(X=predictions, Y=DF_test$Y, seuil = 0.04)
-    recall_0.03 <- recall(X=predictions, Y=DF_test$Y, seuil = 0.03)
-    recall_0.02 <- recall(X=predictions, Y=DF_test$Y, seuil = 0.02)
-    recall_0.01 <- recall(X=predictions, Y=DF_test$Y, seuil = 0.01)
-    recall_0.005 <- recall(X=predictions, Y=DF_test$Y, seuil = 0.005)
-    recall_0.0025 <- recall(X=predictions, Y=DF_test$Y, seuil = 0.0025)
+    acc <- accuracy(X=predictions, Y=DF_test_S$Y)
+    recall_0.07 <- recall(X=predictions, Y=DF_test_S$Y, seuil = 0.07)
+    recall_0.06 <- recall(X=predictions, Y=DF_test_S$Y, seuil = 0.06)
+    recall_0.05 <- recall(X=predictions, Y=DF_test_S$Y, seuil = 0.05)
+    recall_0.04 <- recall(X=predictions, Y=DF_test_S$Y, seuil = 0.04)
+    recall_0.03 <- recall(X=predictions, Y=DF_test_S$Y, seuil = 0.03)
+    recall_0.02 <- recall(X=predictions, Y=DF_test_S$Y, seuil = 0.02)
+    recall_0.01 <- recall(X=predictions, Y=DF_test_S$Y, seuil = 0.01)
+    recall_0.005 <- recall(X=predictions, Y=DF_test_S$Y, seuil = 0.005)
+    recall_0.0025 <- recall(X=predictions, Y=DF_test_S$Y, seuil = 0.0025)
     
     
     # Stocker les métriques dans la table metriques_pour_Shiny
@@ -332,13 +347,13 @@ for (i in 1:nrow(param_xgboost)) {
   
   
   ###### Sauvegarde des DF_entrainement, DF_test et metriques_pour_Shiny pour l'application SHINY
-  saveRDS(DF_entrainement,
-          file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_train",".RDS"))
-  saveRDS(DF_test,
-          file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_test",".RDS") )
+  saveRDS(DF_entrainement_S,
+          file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_train_S",".RDS"))
+  saveRDS(DF_test_S,
+          file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_test_S",".RDS") )
   saveRDS(metriques_pour_Shiny,
           file = paste0(path_data_vf,"/","metriques_pour_Shiny.RDS") )
   
-  #DF_entrainement <- readRDS(file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_train",".RDS"))
-  #DF_test <- readRDS(file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_test",".RDS") )
+  #DF_entrainement_S <- readRDS(file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_train_S",".RDS"))
+  #DF_test_S <- readRDS(file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_test_S",".RDS") )
   #metriques_pour_Shiny <- readRDS(file = paste0(path_data_vf,"/","metriques_pour_Shiny.RDS") )
