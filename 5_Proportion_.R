@@ -2,11 +2,11 @@
 # Date : 05/04/2024
 # Titre : construction de la table CHIRPS avant intégration dans la table globale
 
-# Objectif : long --> wide 
+# Objectif : long --> wide
 
 ################################################################################
 
-matricule <- "N818398"
+matricule <- "X822385"
 
 if (matricule == "N818398") {
   path_USER <- paste0("C:/Users/",matricule,"/Desktop/projetBdF", sep = "")
@@ -32,9 +32,9 @@ source("X6_assemblage_table.R")
 dt_placement_futur <-  as.Date("2024-12-31")       # date à laquelle on se place
 interval_month <- 11                               # pour calculer le top_defaillance
 annee_nb <- 6                                      # combien d'année on va extraire
-nb_model <- 10                                     # nb de modèles que nous allons estimer (surtout important pour les modèles qui comportent une part de random)
+nb_model <- 3                                     # nb de modèles que nous allons estimer (surtout important pour les modèles qui comportent une part de random)
 forme_dt_ls <- c("simple","add_succ_surplus","add_succ_chocs","poly") # forme des données
-TOP_production_dataframe_futur <- FALSE            # production de la table
+TOP_production_dataframe_futur <- TRUE            # production de la table
 forme_dt  <- paste(forme_dt_ls, collapse = "_")    # variables calculées
 
 
@@ -47,7 +47,7 @@ if (TOP_production_dataframe_futur == TRUE) {
                                            para_interval = interval_month)
   
   print("=> chargement de la table CHIRPS")
-  chirps_data_futur <- X1_creationCHIRPS_db(para_dt_fin = dt_placement_futur,            # date à laquelle on se place
+  chirps_data_futur <- X1_creationCHIRPS_db(para_dt_fin = dt_placement_futur,      # date à laquelle on se place
                                             para_interval_month = interval_month,  # top_defaillance est calculé sur cette table
                                             para_nbYear_scope = annee_nb)          # combien d'année 
   
@@ -73,7 +73,7 @@ if (TOP_production_dataframe_futur == TRUE) {
   
 }
 
-DB_ori <- readRDS(paste0(path_data_vf,"/",dt_placement,"_DB_.RDS"))
+DB_ori <- readRDS(paste0(path_data_vf,"/",dt_placement_futur,"_DB_.RDS"))
 sapply(DB_futur_preparation, function(x) sum(is.na(x)))
 
 ### 1 - Mettre en page les variables qualitatives 
@@ -121,7 +121,7 @@ DB_surplus_chocs <- add_cumul_function(para_db =DB_extreme_chocs,
                                        para_dt_placement = dt_placement_futur)
 ###################################################################################
 
-# Base choisie
+# Base choisie (JMI : exactement la même base que celle utilisée dans le programme 4)
 DB_futur <- X6_construction_base(forme_dt_ls,
                                  para_succ_nb_periode = 3, 
                                  para_dt_placement = dt_placement_futur)
@@ -142,22 +142,25 @@ for (pho in 1:nb_model){
   
   print("=> Lecture xgboost")
   xgb_fit <- readRDS(paste0(path_pg_models_save,"/",forme_dt,"_vf_xgb_n",pho,".RDS"))
+  DB_futur_pred[,paste("xgb_mod_",pho, sep = "")] <- predict(xgb_fit, DB_futur, type = "prob")[2]
+}  
   if (pho < 2){
     print("=> Lecture logit")
     logit_fit <- readRDS(paste0(path_pg_models_save,"/",forme_dt,"_vf_logit_n",pho,".RDS"))
     DB_futur_pred[,paste("logit","mod",pho, sep = "_")] <- predict(logit_fit, DB_futur, type = "prob")[2]
   }
+  
   print("=> Lecture random forest")
   rf_mod_fit <- readRDS(paste0(path_pg_models_save,"/",forme_dt,"_vf_random_forest_n",pho,".RDS"))
-  
-  DB_futur_pred[,paste("xgb_mod_",pho, sep = "")] <- predict(xgb_fit, DB_futur, type = "prob")[2]
   DB_futur_pred[,paste("rf_mod",pho, sep = "_")] <- predict(rf_mod_fit, DB_futur)$predictions[,2]
   
 }
 
 saveRDS(DB_futur_pred, file = paste0(path_data_vf,"/",dt_placement_futur,"_prediction_demain_defaillance.RDS"))
 
-
+names(DB)
+names(DB_futur)
+names(DB_futur_preparation)
 
 
 
