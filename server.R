@@ -1,5 +1,5 @@
 shinyServer(function(input, output) {
-    
+  
     output$h2_title1 <- renderUI({
         h3(paste0("Statistiques", sep = ""))
     })
@@ -8,7 +8,7 @@ shinyServer(function(input, output) {
         h3(paste0("Choix de modèles", sep = ""))
     })
     output$h2_title_Calibrage <- renderUI({
-        h3(paste0("Calibrage du XGBoost", sep = ""))
+        h3(paste0("Focus sur XGBoost : variables significatives et calibrage", sep = ""))
     })
     output$h2_title3 <- renderUI({
         h3(paste0("Résultats", sep = ""))
@@ -54,12 +54,91 @@ shinyServer(function(input, output) {
             rownames = FALSE)
     })
     
-    output$def_table2 <- DT::renderDataTable({
-        db_defaillance
+    output$tab1_plot_comparaison <- renderPlot({
+        ggplot(data = compar_siete_webstat_2, aes(x = Annee, y = Defaillances, color = Source)) +
+            geom_line(size = 1.2) + 
+            geom_point(size = 3) +
+            theme_minimal() +
+            labs(title = "Évolution des Défaillances par Année",
+                 x = "Année",
+                 y = "Nombre de Défaillances",
+                 color = "Source") +
+            scale_color_manual(values = c("Defaillances_SIETE" = "steelblue", "Defaillances_WEBSTAT" = "darkorange")) +
+            theme(
+                plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+                axis.title = element_text(size = 14),
+                axis.text = element_text(size = 12),
+                legend.title = element_text(size = 12),
+                legend.text = element_text(size = 10)
+            )
     })
-    output$def_table3 <- DT::renderDataTable({
-        db_defaillance
+    
+    output$tab1_cor_matrix_avt <- renderPlot({
+        corrplot(cor_matrix_avt, method = "color", type = "upper", 
+                 tl.col = "black", tl.srt = 45, 
+                 addCoef.col = "black", number.cex = 0.7, 
+                 col = colorRampPalette(c("red", "white", "blue"))(200))
     })
+    
+    output$tab1_cor_matrix_aps <- renderPlot({
+        corrplot(cor_matrix_aps, method = "color", type = "upper", 
+                 tl.col = "black", tl.srt = 45, 
+                 addCoef.col = "black", number.cex = 0.7, 
+                 col = colorRampPalette(c("red", "white", "blue"))(200))
+    })
+    
+    output$tab1_boxplot_var1 <- renderPlot({
+        ggplot(DB_stats, aes(x = "", y = ca_moy_2014_2021)) + geom_boxplot() + labs(title = "ca_moy_2014_2021", y = "ca_moy_2014_2021") + theme(axis.text.x = element_blank())
+    })
+    
+    output$tab1_boxplot_var2a <- renderPlot({
+        ggplot(DB_stats, aes(x = "", y = effectifs_moy_2014_2021)) + geom_boxplot() + labs(title = "effectifs_moy_2014_2021 avant retraitement", y = "effectifs_moy_2014_2021") + theme(axis.text.x = element_blank())
+    })
+    
+    output$tab1_boxplot_var2b <- renderPlot({
+        ggplot(DB, aes(x = "", y = effectifs_moy_2014_2021)) + geom_boxplot() + labs(title = "effectifs_moy_2014_2021 après retraitement", y = "effectifs_moy_2014_2021") + theme(axis.text.x = element_blank())
+    })
+    
+    output$tab1_boxplot_var3a <- renderPlot({
+        ggplot(DB_stats, aes(x = "", y = Besoin_en_FDR_moy)) + geom_boxplot() + labs(title = "Besoin en fond de roulement (DFDR) moyen avant retraitement", y = "Besoin_en_FDR_moy") + theme(axis.text.x = element_blank())    
+    })
+    
+    output$tab1_boxplot_var3b <- renderPlot({
+        ggplot(DB, aes(x = "", y = Besoin_en_FDR_moy)) + geom_boxplot() + labs(title = "Besoin en fond de roulement (DFDR) moyen après retraitement", y = "Besoin_en_FDR_moy") + theme(axis.text.x = element_blank())
+    })
+
+    output$tab1_boxplot_var4a <- renderPlot({
+        ggplot(DB_stats, aes(x = "", y = Total_actif_circulant_moy)) + geom_boxplot() + labs(title = "Total de l'actif circulant moyen avant retraitement", y = "Total_actif_circulant_moy") + theme(axis.text.x = element_blank())    
+    })
+    
+        output$tab1_boxplot_var4b <- renderPlot({
+        ggplot(DB, aes(x = "", y = Total_actif_circulant_moy)) + geom_boxplot() + labs(title = "Total de l'actif circulant moyen après retraitement", y = "Total_actif_circulant_moy") + theme(axis.text.x = element_blank())
+    })
+
+        output$tab1_boxplot_var5a <- renderPlot({
+            ggplot(DB_stats, aes(x = "", y = Dettes_four_et_comptes_ratt_moy)) + geom_boxplot() + labs(title = "Dettes fournisseurs et comptes rattachées moyen avant retraitement", y = "Dettes_four_et_comptes_ratt_moy") + theme(axis.text.x = element_blank())
+    })    
+        output$tab1_boxplot_var5b <- renderPlot({
+            ggplot(DB, aes(x = "", y = Dettes_four_et_comptes_ratt_moy)) + geom_boxplot() + labs(title = "Dettes fournisseurs et comptes rattachées moyen après retraitement", y = "Dettes_four_et_comptes_ratt_moy") + theme(axis.text.x = element_blank())
+    })    
+      
+        output$tab1_boxplot_var6a <- renderPlot({
+            ggplot(DB_stats, aes(x = "", y = Total_dettes_moy)) + geom_boxplot() + labs(title = "Total des dettes avant retraitement", y = "Total_dettes_moy") + theme(axis.text.x = element_blank())        
+    })    
+        
+        output$tab1_boxplot_var6b <- renderPlot({
+            ggplot(DB, aes(x = "", y = Total_dettes_moy)) + geom_boxplot() + labs(title = "Total des dettes après retraitement", y = "Total_dettes_moy") + theme(axis.text.x = element_blank())        
+    })    
+    
+        output$tab1_boxplot_var7a <- renderPlot({
+            ggplot(DB_stats, aes(x = "", y = Resultat_comptable_moy)) + geom_boxplot() + labs(title = "Résultat comptable (bénéfice ou perte) avant retraitement", y = "Resultat_comptable_moy") + theme(axis.text.x = element_blank())
+    })    
+        
+        output$tab1_boxplot_var7b <- renderPlot({
+            ggplot(DB, aes(x = "", y = Resultat_comptable_moy)) + geom_boxplot() + labs(title = "Résultat comptable (bénéfice ou perte) après retraitement", y = "Resultat_comptable_moy") + theme(axis.text.x = element_blank())
+    })  
+        
+
     
     # Matrice de confusion
     
@@ -69,7 +148,7 @@ shinyServer(function(input, output) {
                                                   para_nb_logit = input$sm_logit, 
                                                   para_nb_xgb = input$sm_xgb,
                                                   para_threshold = input$slider_Threshold, 
-                                                  para_DB = DF_entrainement, 
+                                                  para_db = DF_entrainement, 
                                                   para_var_selected = input$choiceIndicators)
         
         
@@ -85,7 +164,7 @@ shinyServer(function(input, output) {
                                                   para_nb_logit = input$sm_logit,
                                                   para_nb_xgb = input$sm_xgb,
                                                   para_threshold = input$slider_Threshold, 
-                                                  para_DB = DF_test, 
+                                                  para_db = DF_test, 
                                                   para_var_selected = input$choiceIndicators)
         
         
@@ -105,7 +184,7 @@ shinyServer(function(input, output) {
             para_nb_logit = input$sm_logit,
             para_nb_xgb = input$sm_xgb,
             para_threshold = input$slider_Threshold, 
-            para_DB = DF_demain_pred, 
+            para_db = DF_demain_pred, 
             para_var_selected = input$choiceIndicators)
         
         pred_db2 <- predire_les_defaillances_demain %>% 
@@ -160,7 +239,7 @@ shinyServer(function(input, output) {
                                          para_nb_logit = input$sm_logit,
                                          para_nb_xgb = input$sm_xgb,
                                          para_threshold = input$slider_Threshold, 
-                                         para_DB = DF_test, 
+                                         para_db = DF_test, 
                                          para_var_selected = input$choiceIndicators)
         
         explore_FT <- test_set %>% bind_cols(xx) %>%
@@ -183,29 +262,15 @@ shinyServer(function(input, output) {
         content = function(file) {
             write.csv(df_explore_FT(), file, row.names = FALSE)
         }
-    )    
+    )
     
+    output$importance_plot <- renderPlot({
+
+      # Importance des variables (méthode VIP) dans le modèle XGBoost
+        print(importance_plot)
+    })    
     
     output$density_plot <- renderPlot({
-        
-        # Récupérer les données de densité normalisées correspondant au learning rate sélectionné
-        selected_variable <- lr_rate_mapping$variable_name[lr_rate_mapping$learning_rate==input$learning_rate]
-        
-        # Récupérer les données de densité correspondant au nom de variable
-        selected_density <- DF_test[[selected_variable]]
-        
-        # Création du graphique
-        ggplot(DF_test, aes_string(x = selected_variable, fill = "factor(Y)")) + 
-            geom_density(alpha = 0.5) +
-            scale_fill_manual(values = c("blue", "red")) +
-            labs(title = paste0("Densité des prédictions normalisées selon Y pour learning rate de ", input$learning_rate),
-                 x = "Prédictions (YP)",
-                 y = "Densité") +
-            theme_minimal() +
-            theme(plot.title=element_text(size=20))
-    })
-    
-    output$density_plot_2 <- renderPlot({
         # Récupérer les données de densité NON normalisées correspondant au learning rate sélectionné
         selected_variable <- lr_rate_mapping$variable_name_2[lr_rate_mapping$learning_rate==input$learning_rate]
         
@@ -233,7 +298,7 @@ shinyServer(function(input, output) {
         #selected_metrics <- compute_metrics(input$learning_rate)
         
         # Afficher les métriques
-        output$selected_metrics <- renderDataTable({
+        output$selected_metrics <- DT::renderDataTable({
             metriques_pour_Shiny
         })
     })
