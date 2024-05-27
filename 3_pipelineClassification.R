@@ -45,23 +45,19 @@ if (chargement_modeles == FALSE){
   log_fitted_cv <- readRDS(file = paste0(path_data_vf,"/",forme_dt,"_mod_log_tuned.RDS"))
   ridge_fitted_cv <- readRDS(file = paste0(path_data_vf,"/",forme_dt,"_mod_ridge_tuned.RDS"))
   lasso_fitted_cv <- readRDS(file = paste0(path_data_vf,"/",forme_dt,"_mod_lasso_tuned.RDS"))
-  #elasNet_fitted_cv <- readRDS(file = paste0(path_data_vf,"/",forme_dt,"_mod_elasticNet_tuned.RDS"))
-  rf_fitted_cv <- readRDS(file = paste0(path_data_vf,"/",forme_dt,"_mod_rf1_tuned.RDS"))
+  elasticnet_fitted_cv <- readRDS(file = paste0(path_data_vf,"/",forme_dt,"_mod_elasticnet_tuned.RDS"))
+  rf_fitted_cv <- readRDS(file = paste0(path_data_vf,"/",forme_dt,"_mod_rf_tuned.RDS"))
   xgb_fitted_cv <- readRDS(file = paste0(path_data_vf,"/",forme_dt,"_mod_xgb_tuned.RDS"))
 }
 
 
 DB <- DB %>% 
-  select(-c(siren,dt,ea_ul,b500_moy)) %>% # je retire "ea_ul" qui n'a plus d'utilité et b500_moy avec des NA (var quali : region, nj_ret, ape_ret, ent_age_ret)
+  select(-c(siren,dt,ea_ul)) %>% # je retire "ea_ul" qui n'a plus d'utilité (var quali : region, nj_ret, ape_ret, ent_age_ret)
   rename(Y = top_defaillance)# %>%
 # summary(DB)
 # names(DB)
 DB$Y <- factor(DB$Y) # TRES IMPORTANT !
-# table(DB$region)
-# table (DB$nj_ret)
-# table (DB$ape_ret)
-# table (DB$ent_age_ret)
-# saveRDS(DB, file = paste0(path_data_vf,"/",dt_placement,"_DB_postRET.RDS"))
+
 
 # 2 | Mise en place du training + test
 need <- TRUE    # Pour assurer la reproductivité 
@@ -94,13 +90,13 @@ prep(rec)
 head(juice(prep(rec)))
 formula(juice(prep(rec)))
 
-#rec_spline <- rec_inter%>%step_ns(deg_free =tune())
+rec_spline <- rec_inter%>%step_ns(deg_free =tune())
 
 # Ajout de la VC avec X blocs
-folds <- vfold_cv(training, v=10, strata=Y)
+folds <- vfold_cv(training, v=5, strata=Y)
 
 
-# 3 | Mise en place (dont hypertuning à l'aide de la random grid search => pour grid je met à 5 mais la prod met à 20)
+# 3 | Mise en place (dont hypertuning à l'aide de la random grid search => pour grid je met à 5 mais la prof met à 20)
 
 ### REGRESSION LOGISTIQUE (PAS D'HYPERTUNING POUR CE MODELE)
 if (chargement_modeles == TRUE){
@@ -108,23 +104,23 @@ log_mod <- logistic_reg()%>%
   set_engine('glm')%>%
   set_mode('classification')
 log_wf <- workflow()%>%
-  add_recipe(rec_inter)%>%
+  add_recipe(rec)%>%
   add_model(log_mod)
 log_fitted_cv <- log_wf %>%
   fit_resamples(
     resamples = folds,
     metrics = metric_set(roc_auc)
   )
-saveRDS(log_fitted_cv, file = paste0(path_pg_models_save,"/",forme_dt,"_mod_log_tuned_v2.RDS"))
-# log_fitted_cv<- readRDS(file = paste0(path_pg_models_save,"/",forme_dt,"_mod_log_tuned_v2.RDS"))
+saveRDS(log_fitted_cv, file = paste0(path_pg_models_save,"/",forme_dt,"_mod_log_tuned.RDS"))
+# log_fitted_cv<- readRDS(file = paste0(path_pg_models_save,"/",forme_dt,"_mod_log_tuned.RDS"))
 log_fitted_cv %>% collect_metrics()
-best_model_log <- show_best(log_fitted_cv, metric="roc_auc") %>% mutate(Model="Logistique") # roc_auc=0,637
+best_model_log <- show_best(log_fitted_cv, metric="roc_auc") %>% mutate(Model="Logistique", Forme_Model=forme_dt) # roc_auc=0,637
 }
 
 
 ### XGBOOST
 if (chargement_modeles == TRUE){
-xgb_mod <- boost_tree(learn_rate=0.5, mtry=215, min_n=30)%>% #learn_rate=tune(), min_n=profondeur d'arbre, mtry=nb de feuilles
+xgb_mod <- boost_tree(learn_rate=0.3, mtry=215, min_n=30)%>% #learn_rate=tune(), min_n=profondeur d'arbre, mtry=nb de feuilles
   set_engine('xgboost')%>%
   set_mode('classification')
 xgb_wf <- workflow()%>%
@@ -137,158 +133,140 @@ xgb_fitted_cv <- xgb_wf %>%
     metrics = metric_set(roc_auc),
     control=control_grid(verbose=TRUE, save_pred=TRUE)
   )
-saveRDS(xgb_fitted_cv, file = paste0(path_pg_models_save,"/",forme_dt,"_mod_xgb_tuned_v2.RDS"))
-# xgb_fitted_cv<- readRDS(file = paste0(path_pg_models_save,"/",forme_dt,"_mod_xgb_tuned_v2.RDS"))
+saveRDS(xgb_fitted_cv, file = paste0(path_pg_models_save,"/",forme_dt,"_mod_xgb_tuned.RDS"))
+# xgb_fitted_cv<- readRDS(file = paste0(path_pg_models_save,"/",forme_dt,"_mod_xgb_tuned.RDS"))
 xgb_fitted_cv %>% collect_metrics()
 xgb_fitted_cv %>% collect_predictions()
 best_models_xgb <- xgb_fitted_cv %>% collect_metrics() %>% filter (.metric =='roc_auc') %>% arrange (desc(mean)) # mtry=114 ; min_n=19 ; roc_auc = 0,781
-best_model_xgb <- best_models_xgb[1,] %>% mutate(Model="XG_Boost")
+best_model_xgb <- best_models_xgb[1,] %>% mutate(Model="XG_Boost", Forme_Model=forme_dt)
 }
 
-DF_test$Y <- as.numeric(DF_test$Y)
 
-accuracy <- function(X,Y,seuil=0.5){
-  Xc=X*0
-  Xc[X>seuil] <- 1
-  sum(Xc==Y)/length(Y)*100
+### ELASTICNET
+if (chargement_modeles == TRUE){
+  elasticnet_mod <- logistic_reg(mode="classification", engine="glmnet", penalty=tune(), mixture=0.5) 
+  elasticnet_grid <- grid_regular(penalty(), levels=5)
+  elasticnet_wf <- workflow()%>%
+    add_recipe(rec)%>%
+    add_model(elasticnet_mod)
+  elasticnet_fitted_cv <- elasticnet_wf %>%
+    tune_grid(
+      resamples = folds,
+      grid=elasticnet_grid,
+      metrics = metric_set(roc_auc),
+      control=control_grid(verbose=TRUE)
+  )
+  saveRDS(elasticnet_fitted_cv, file = paste0(path_pg_models_save,"/",forme_dt,"_mod_elasticnet_tuned.RDS"))
+  # elasticnet_fitted_cv<- readRDS(file = paste0(path_pg_models_save,"/",forme_dt,"_mod_elasticnet_tuned.RDS"))
+    elasticnet_fitted_cv %>% collect_metrics()
+  best_models_elasticnet <- show_best(elasticnet_fitted_cv, metric="roc_auc") # penalty=4.81e- 5  ; roc_auc = 0.686
+  best_model_elasticnet <- best_models_elasticnet[1,] %>% mutate(Model="Elasticnet", Forme_Model=forme_dt)
 }
-
-recall <- function(X,Y,seuil=0.5){
-  Xc=X*0
-  Xc[X>seuil] <- 1
-  
-  vrai_positif <- sum(Xc == 1 & Y == 1)
-  positif_real <- sum(Y==1)
-  
-  vrai_positif / positif_real*100
-}
-
-apply(X = DF_test,2,accuracy,Y=DF_test$Y) # seuil=0.5
-
-apply(X = DF_test,2,accuracy,Y=DF_test$Y,seuil = 0.01)
-
-apply(X = DF_test,2,recall,Y=DF_test$Y,seuil = 0.001)
-rm(DF_test)
 
 ### LASSO
 if (chargement_modeles == TRUE){
-lasso_mod <- logistic_reg(mode="classification", engine="glmnet", penalty=1.30e-5, mixture=1) 
+lasso_mod <- logistic_reg(mode="classification", engine="glmnet", penalty=tune(), mixture=1) 
+lasso_grid <- grid_regular(penalty(), levels=5)
 lasso_wf <- workflow()%>%
-  add_recipe(rec_inter)%>%
+  add_recipe(rec)%>%
   add_model(lasso_mod)
 lasso_fitted_cv <- lasso_wf %>%
-  fit_resamples(
-    resamples = folds,
+  tune_grid(
+    resamples = folds, 
+    grid=lasso_grid,
     metrics = metric_set(roc_auc),
     control=control_grid(verbose=TRUE)
   ) #tune_grid et grid=5
-saveRDS(lasso_fitted_cv, file = paste0(path_pg_models_save,"/",forme_dt,"_mod_lasso_tuned_v2.RDS"))
+saveRDS(lasso_fitted_cv, file = paste0(path_pg_models_save,"/",forme_dt,"_mod_lasso_tuned.RDS"))
 # lasso_fitted_cv<- readRDS(file = paste0(path_pg_models_save,"/",forme_dt,"_mod_lasso_tuned.RDS"))
 lasso_fitted_cv %>% collect_metrics()
 best_models_lasso <- show_best(lasso_fitted_cv, metric="roc_auc") # penalty=4.81e- 5  ; roc_auc = 0.686
-best_model_lasso <- best_models_lasso[1,] %>% mutate(Model="Lasso")
+best_model_lasso <- best_models_lasso[1,] %>% mutate(Model="Lasso", Forme_Model=forme_dt)
 } 
 
 ### RIDGE
 if (chargement_modeles == TRUE){
 ridge_mod <- logistic_reg(mode="classification", engine="glmnet", penalty=tune(), mixture=0) 
+ridge_grid <- grid_regular(penalty(), levels=5)
 ridge_wf <- workflow()%>%
-  add_recipe(rec_inter)%>%
+  add_recipe(rec)%>%
   add_model(ridge_mod)
 ridge_fitted_cv <- ridge_wf %>%
   tune_grid(
     resamples = folds,
-    grid=5,
-    metrics = metric_set(roc_auc) # f_meas,recall
-  )
-saveRDS(ridge_fitted_cv, file = paste0(path_pg_models_save,"/",forme_dt,"_mod_ridge_tuned_v2.RDS"))
+    grid=ridge_grid,
+    metrics = metric_set(roc_auc),
+    control=control_grid(verbose=TRUE)
+  ) # f_meas,recall
+saveRDS(ridge_fitted_cv, file = paste0(path_pg_models_save,"/",forme_dt,"_mod_ridge_tuned.RDS"))
+# ridge_fitted_cv<- readRDS(file = paste0(path_pg_models_save,"/",forme_dt,"_mod_ridge_tuned.RDS"))
 ridge_fitted_cv %>% collect_metrics()
 best_models_ridge <- ridge_fitted_cv %>% collect_metrics() %>% filter (.metric =='roc_auc') %>% arrange (desc(mean)) # penalty=1.24e-10 ; roc_auc = 0,672
-best_model_ridge <- best_models_ridge[1,] %>% mutate(Model="Ridge")
+best_model_ridge <- best_models_ridge[1,] %>% mutate(Model="Ridge", Forme_Model=forme_dt)
 }
 
 
-### RANDOM FOREST (ATTENTION !!! SOIT A LA MANO SOIT ON NE FAIT PAS D'HYPERTUNING (500 arbres max notamment))
+### RANDOM FOREST (ATTENTION !!! PRENDS DU TEMPS ; on fixe donc à 500 arbres)
 if (chargement_modeles == TRUE){
   rf_mod <- rand_forest(trees=500,min_n=tune())%>% # trees=nd d'arbres, min_n=profondeur d'arbre
     set_engine('ranger')%>%
     set_mode('classification')
   rf_wf <- workflow()%>%
-    add_recipe(rec_inter)%>%
+    add_recipe(rec)%>%
     add_model(rf_mod)
   rf_fitted_cv <- rf_wf %>%
     tune_grid(
       resamples = folds, 
-      metrics = metric_set(accuracy, roc_auc),
-      grid=5
-    ) 
-  saveRDS(rf_fitted_cv, file = paste0(path_pg_models_save,"/",forme_dt,"_mod_rf1_tuned_v2.RDS"))
-  rf_fitted_cv %>% collect_metrics()
+      metrics = metric_set(roc_auc),
+      grid=5,
+      control=control_grid(verbose=TRUE)
+    ) #accuracy
+  saveRDS(rf_fitted_cv, file = paste0(path_pg_models_save,"/",forme_dt,"_mod_rf_tuned.RDS"))
+  # rf_fitted_cv<- readRDS(file = paste0(path_pg_models_save,"/",forme_dt,"_mod_rf_tuned.RDS"))
+    rf_fitted_cv %>% collect_metrics()
   best_models_rf <- rf_fitted_cv %>% collect_metrics() %>% filter (.metric =='roc_auc') %>% arrange (desc(mean)) # trees=1760 ; min_n =14 ; roc_auc =0,738 
-  best_model_rf <- best_models_rf[1,] %>% mutate(Model="Random_Forest")
+  best_model_rf <- best_models_rf[1,] %>% mutate(Model="Random_Forest", Forme_Model=forme_dt) 
 }
 
 
-### SPLINE (DONNE DE TRES MAUVAIS RESULTATS, VOIR SI SVM NE MARCHE PAS MIEUX)
-if (chargement_modeles == TRUE){
-spline_mod <- decision_tree(
-  mode = "classification",
-  engine = "rpart")
-spline_wf <- workflow()%>%
-  add_recipe(rec_spline)%>%
-  add_model(spline_mod)
-spline_fitted_cv <- spline_wf %>%
-  tune_grid(
-    resamples = folds,
-    grid=5,
-    metrics = metric_set(roc_auc)
-  )
-saveRDS(spline_fitted_cv, file = paste0(path_pg_models_save,"/",forme_dt,"_mod_spline_tuned.RDS"))
-spline_fitted_cv %>% collect_metrics()
-best_models_spline <- spline_fitted_cv %>% collect_metrics() %>% filter (.metric =='roc_auc') %>% arrange (desc(mean)) # roc_auc = 0,5 à tous les coups...
-best_model_spline <- best_models_spline[1,] %>% mutate(Model="Spline")
-}
-
-
-
-
-### ELASTICNET (NE MARCHE PAS)
-if (chargement_modeles == TRUE){
-elasticnet_mod <- logistic_reg(mode="classification", engine="glmnet", penalty=tune(), mixture=tune()) 
-elasticnet_wf <- workflow()%>%
-  add_recipe(rec)%>%
-  add_model(elasticnet_mod)
-grid <- expand.grid(
-  penalty=c(0,0.5,1),
-  mixture=seq(0,1, by=0.1)
-)
-elasticnet_fitted_cv <- elasticnet_wf %>%
-  tune_grid(
-    resamples = folds,
-    grid=grid,
-    metrics = metric_set(roc_auc)
-  )
-saveRDS(elasticnet_fitted_cv, file = paste0(path_pg_models_save,"/",forme_dt,"_mod_elasticnet_tuned.RDS"))
-elasticnet_fitted_cv %>% collect_metrics()
-elasticnet_fitted_cv %>% collect_metrics() %>% filter (.metric =='roc_auc') %>% arrange (desc(mean)) # penalty= ; roc_auc = 
-}
-
+### SPLINE (DONNE DE TRES MAUVAIS RESULTATS, mal calibré probablement ; je ne le considère pas sauf si tu veux)
+# if (chargement_modeles == TRUE){
+# spline_mod <- decision_tree(
+#  mode = "classification",
+#  engine = "rpart")
+# spline_wf <- workflow()%>%
+#  add_recipe(rec_spline)%>%
+#  add_model(spline_mod)
+# spline_fitted_cv <- spline_wf %>%
+#  tune_grid(
+#    resamples = folds,
+#    grid=5,
+#    metrics = metric_set(roc_auc)
+#  )
+#saveRDS(spline_fitted_cv, file = paste0(path_pg_models_save,"/",forme_dt,"_mod_spline_tuned.RDS"))
+# spline_fitted_cv <- readRDS(file = paste0(path_pg_models_save,"/",forme_dt,"_mod_spline_tuned.RDS"))
+#spline_fitted_cv %>% collect_metrics()
+#best_models_spline <- spline_fitted_cv %>% collect_metrics() %>% filter (.metric =='roc_auc') %>% arrange (desc(mean)) # roc_auc = 0,5 à tous les coups...
+#best_model_spline <- best_models_spline[1,] %>% mutate(Model="Spline")
+#}
 
 
 # 4 | Comparaison des modèles
-model_results <- bind_rows(best_model_log, best_model_lasso, best_model_ridge, best_model_rf, best_model_xgb) %>% arrange (desc(mean))
-model_results_pour_Shiny <- model_results[,c(".metric", "mean", "n", ".config", "Model", "penalty", "mtry", "min_n")] 
-model_results_pour_Shiny <- round(model_results_pour_Shiny, digits=2)
+model_results <- bind_rows(best_model_log, best_model_lasso, best_model_ridge, best_model_elasticnet, best_model_rf, best_model_xgb) %>% arrange (desc(mean))
+model_results_pour_Shiny <- model_results[,c(".metric", "mean", "n", ".config", "Model", "penalty", "mtry", "min_n","Forme_Model")] 
+#model_results_pour_Shiny <- round(model_results_pour_Shiny[,c("mean")], digits=2)
+saveRDS(model_results_pour_Shiny, file = paste0(path_pg_models_save,"/",forme_dt,"_model_results_pour_Shiny.RDS"))
+#model_results_pour_Shiny <- readRDS(file = paste0(path_pg_models_save,"/",forme_dt,"_model_results_pour_Shiny.RDS"))
 
 
 # 5 | MODELES FINAUX estimé sur l'ensemble des données (training=test_set+eval_set) POUR TROUVER LES HYPERPARAMETRES XGBOOST ET RANDOMFOREST
 
 #### creating and fitting a workflowset, evaluating of all wf in the wf_set
-xgb_mod <- boost_tree(learn_rate=0.25,mtry=tune(), min_n=tune())%>% #min_n=profondeur d'arbre, mtry=nb de feuilles
+xgb_mod <- boost_tree(learn_rate=0.50,mtry=tune(), min_n=tune())%>% #min_n=profondeur d'arbre, mtry=nb de feuilles
   set_engine('xgboost')%>%
   set_mode('classification')
 
-rf_mod <- rand_forest(trees=500,min_n=tune())%>% # trees=nd d'arbres, min_n=profondeur d'arbre
+rf_mod <- rand_forest(trees=500,min_n=tune())%>% # trees=nb d'arbres, min_n=profondeur d'arbre
   set_engine('ranger')%>%
   set_mode('classification')
 
