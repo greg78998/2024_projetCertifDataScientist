@@ -1,18 +1,26 @@
 
-
 X_compute_confusion_matrix <- function(para_nb_rf, para_nb_logit, para_nb_xgb, 
-                                       para_threshold, para_DB, para_var_selected){
+                                       para_threshold, para_db, para_var_selected){
+#  para_nb_rf <- 0
+#  para_nb_logit <- 0
+#  para_nb_xgb <- 3
+#  para_threshold <- 0.1
+#  para_db <- DF_test
+#  para_var_selected <- choice_A
+# rm(para_nb_rf, para_nb_logit, para_nb_xgb, para_db, para_var_selected, tab_plot_1, tab_plot_2, tab_plot_3)  
   
-  
-  tab_plot_1 <- select(para_DB, 
+  tab_plot_1 <- select(para_db, 
                        matches(c("Y",
-                                 paste0("^rf_[0-",para_nb_rf,"]$"),
-                                 paste0("^logit_[0-",para_nb_logit,"]$"), 
-                                 paste0("^xgb_[0-",para_nb_xgb,"]$")
+                                 paste0("^rf_mod_",0:para_nb_rf),
+                                 paste0("^logit_mod_",0:para_nb_logit), 
+                                 paste0("^xgb_mod_",0:para_nb_xgb)
                                  
                        )))
-  
-  
+
+#  rm(para_DB)
+#  rm(tab_plot_2)
+#  rm(tab_plot_3)
+
   tab_plot_2 <- add_var_model(tab_plot_1, para_threshold)
   
   tab_plot_3 <- tab_plot_2 %>%
@@ -48,6 +56,7 @@ X_draw_plot_confusion_matrix <- function(para_db){
                                  filter(true_labels ==1) %>%
                                  summarise(tot = sum(nb)))*100
   unit <- 0.45
+  
   # Visualiser la matrice de confusion; avec ggplot2
   tau <- ggplot(conf_matrix,
                 aes(x = predicted_labels , y = true_labels)) +
