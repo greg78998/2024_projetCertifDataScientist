@@ -81,7 +81,7 @@ metriques_pour_Shiny <- readRDS(file = paste0(path_data_vf,"/","metriques_pour_S
 
 lr_rate_mapping <- readRDS(file = paste0(path_data_vf,"/","lr_rate_mapping.RDS") )
 
-model_results_pour_Shiny <- readRDS(file = paste0(path_data_vf,"/","simple_add_succ_surplus_add_succ_chocs_poly_model_results_pour_Shiny.RDS") )
+model_results_pour_Shiny <- readRDS(file = paste0(path_data_vf,"/","model_results_pour_Shiny.RDS") )
 
 
 # Import du modèle XGB ajusté aux données d'apprentissage pour rechercher l'importance des variables
