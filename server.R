@@ -272,13 +272,13 @@ shinyServer(function(input, output) {
     
     output$density_plot <- renderPlot({
         # Récupérer les données de densité NON normalisées correspondant au learning rate sélectionné
-        selected_variable <- lr_rate_mapping$variable_name_2[lr_rate_mapping$learning_rate==input$learning_rate]
+        selected_variable <- lr_rate_mapping$variable_name[lr_rate_mapping$learning_rate==input$learning_rate]
         
         # Récupérer les données de densité correspondant au nom de variable
-        selected_density <- DF_test[[selected_variable]]
+        selected_density <- DF_test_S[[selected_variable]]
         
         # Création du graphique
-        ggplot(DF_test, aes_string(x = selected_variable, fill = "factor(Y)")) + 
+        ggplot(DF_test_S, aes_string(x = selected_variable, fill = "factor(Y)")) + 
             geom_density(alpha = 0.5) +
             scale_fill_manual(values = c("blue", "red")) +
             labs(title = paste0("Densité des prédictions selon Y pour learning rate de ", input$learning_rate),
