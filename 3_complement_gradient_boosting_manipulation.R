@@ -13,11 +13,11 @@
 # 3 | DIVERSES ANALYSES SUR DF_TEST POUR SHINY
 #### Table de paramétrage issue de l'hypertuning du programme 3 à éventuellement automatiser
 param_xgboost <- data.frame(
-  learn_rate=c(0.15,0.20,0.25,0.3,0.4),
-  mtry=c(88,88,92,92,88),
-  min_n=c(23,23,29,29,23)
+  learn_rate=c(0.15,0.20,0.25,0.3,0.4,0.5,0.6),
+  mtry=c(88,67,92,80,88,93,93),
+  min_n=c(23,23,29,29,23,29,29)
 )
-
+# essayer 161 pour 0,3 pour 114 pour 0.25
 
 ##### XGBOOST
 results_list_xgb <- list()
@@ -65,26 +65,7 @@ for (pho in 1:nrow(param_xgboost)) {
 
 # Boucle sur les différentes combinaisons de paramètres dans param_xgboost
 for (i in 1:nrow(param_xgboost)) {
-  # Calcul des densités normalisées pour Y=0
-  DF_test[DF_test$Y==0, paste0("xgb_mod_", i, "_mean_Y0")] <- mean(DF_test[DF_test$Y==0, paste0("xgb_mod_", i)])
-  DF_test[DF_test$Y==0, paste0("xgb_mod_", i, "_sd_Y0")] <- sd(DF_test[DF_test$Y==0, paste0("xgb_mod_", i)])
-  DF_test[DF_test$Y==0, paste0("xgb_mod_", i, "_norm")] <- (DF_test[DF_test$Y==0, paste0("xgb_mod_", i)] - DF_test[DF_test$Y==0, paste0("xgb_mod_", i, "_mean_Y0")]) / DF_test[DF_test$Y==0, paste0("xgb_mod_", i, "_sd_Y0")]
-  
-  # Calcul des densités normalisées pour Y=1
-  DF_test[DF_test$Y==1, paste0("xgb_mod_", i, "_mean_Y1")] <- mean(DF_test[DF_test$Y==1, paste0("xgb_mod_", i)])
-  DF_test[DF_test$Y==1, paste0("xgb_mod_", i, "_sd_Y1")] <- sd(DF_test[DF_test$Y==1, paste0("xgb_mod_", i)])
-  DF_test[DF_test$Y==1, paste0("xgb_mod_", i, "_norm")] <- (DF_test[DF_test$Y==1, paste0("xgb_mod_", i)] - DF_test[DF_test$Y==1, paste0("xgb_mod_", i, "_mean_Y1")]) / DF_test[DF_test$Y==1, paste0("xgb_mod_", i, "_sd_Y1")]
-  
-  # Affichage des courbes de densité normalisées
-  print(ggplot(DF_test, aes_string(x = paste0("xgb_mod_", i, "_norm"), fill = "factor(Y)")) + 
-          geom_density(alpha = 0.5) +
-          scale_fill_manual(values = c("blue", "red")) +
-          labs(title = paste0("Densité des prédictions normalisées selon Y pour learning rate de ", param_xgboost[i,"learn_rate"]),
-               x = "Prédictions (YP)",
-               y = "Densité") +
-          theme_minimal())
-  
-  # Affichage des courbes de densité NON normalisées
+  # Affichage des courbes de densité
   print(ggplot(DF_test, aes_string(x = paste0("xgb_mod_", i), fill = "factor(Y)")) + 
           geom_density(alpha = 0.5) +
           scale_fill_manual(values = c("blue", "red")) +
@@ -96,9 +77,8 @@ for (i in 1:nrow(param_xgboost)) {
 
 # Table de mapping des densités aux learning rates pour Shiny
 lr_rate_mapping <- data.frame(
-  learning_rate=c("0.15","0.20","0.25","0.3","0.4"),
-  variable_name=c("xgb_mod_1_norm","xgb_mod_2_norm","xgb_mod_3_norm","xgb_mod_4_norm","xgb_mod_5_norm"),
-  variable_name_2=c("xgb_mod_1","xgb_mod_2","xgb_mod_3","xgb_mod_4","xgb_mod_5")
+  learning_rate=c("0.15","0.20","0.25","0.3","0.4","0.5","0.6"),
+  variable_name=c("xgb_mod_1","xgb_mod_2","xgb_mod_3","xgb_mod_4","xgb_mod_5","xgb_mod_6","xgb_mod_7")
 )
 
 # Transformer les valeurs de Y en 0 et 1 (à faire en dehors d'une boucle)
@@ -177,14 +157,6 @@ metriques_pour_Shiny <- round(metriques_pour_Shiny, digits=2)
 print(metriques_pour_Shiny)
 
 
-###### Sauvegarde des DF_entrainement, DF_test et metriques_pour_Shiny pour l'application SHINY
-saveRDS(DF_entrainement,
-        file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_train",".RDS"))
-saveRDS(DF_test,
-        file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_test",".RDS") )
+###### Sauvegarde de metriques_pour_Shiny pour l'application SHINY
 saveRDS(metriques_pour_Shiny,
         file = paste0(path_data_vf,"/","metriques_pour_Shiny.RDS") )
-
-#DF_entrainement <- readRDS(file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_train",".RDS"))
-#DF_test <- readRDS(file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_test",".RDS") )
-#metriques_pour_Shiny <- readRDS(file = paste0(path_data_vf,"/","metriques_pour_Shiny.RDS") )
