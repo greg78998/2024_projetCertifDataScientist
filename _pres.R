@@ -83,6 +83,7 @@ lr_rate_mapping <- readRDS(file = paste0(path_data_vf,"/","lr_rate_mapping.RDS")
 
 model_results_pour_Shiny <- readRDS(file = paste0(path_data_vf,"/","model_results_pour_Shiny.RDS") )
 
+DF_test_S <- readRDS(paste(paste0(path_data_vf,"/",dt_placement),forme_dt,"basesPREVISION","test_S.RDS", sep = "_"))
 
 # Import du modèle XGB ajusté aux données d'apprentissage pour rechercher l'importance des variables
 xgb_fit <- readRDS(file = paste0(path_pg_models_save,"/",forme_dt,"_vf_xgb_n",1,".RDS"))
