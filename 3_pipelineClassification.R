@@ -284,6 +284,10 @@ model_results_pour_Shiny_concat <- rbind(simple_model_results_pour_Shiny, simple
 saveRDS(model_results_pour_Shiny_concat, file = paste0(path_pg_models_save,"/","model_results_pour_Shiny.RDS"))
 
 
+
+
+############################################################################################################################################
+####################### NE PAS LANCER CI-DESSOUS, CETTE SECTION A ETE UTILE LORS DE LA PHASE D'INVESTIGATION MAIS N'EST PAS UTILE SINON ####
 # 5 | MODELES FINAUX estimé sur l'ensemble des données (training=test_set+eval_set) POUR TROUVER LES HYPERPARAMETRES XGBOOST ET RANDOMFOREST
 
 #### creating and fitting a workflowset, evaluating of all wf in the wf_set
