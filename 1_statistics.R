@@ -1,6 +1,6 @@
 # STASTISTIQUES (on fait des stats sur DB avant ajustements sur les variables financières : DB_stats, ainsi on n'interfère pas avec DB)
 
-matricule <- "X822385" 
+matricule <- "N818398" 
 
 if (matricule == "N818398") {
   path_USER <- paste0("C:/Users/",matricule,"/Desktop/projetBdF", sep = "")
@@ -31,7 +31,7 @@ sapply(DB_stats, function(x) sum(is.na(x)))
 # 3 | grapher les données 
 
 graph_chirps <- DB_stats %>% 
-  select(siren, top_defaillance, starts_with("rf_")) %>%
+  select(siren, region, top_defaillance, starts_with("rf_")) %>%
   pivot_longer(cols = starts_with("rf_M"), 
                names_to = "per_ref") %>%
   mutate(per_ref2 = as.integer(substr(per_ref,6,7))) %>%   # pour que les valeurs soient comparables
@@ -46,7 +46,7 @@ draw_graph <- graph_chirps %>%
   bind_rows(graph_chirps %>% 
               filter(top_defaillance == 0, siren %in% tab2$siren))
 ggplot() + 
-  geom_jitter(data=draw_graph,aes(x = desc(per_ref2), y = value)) +
+  geom_line(data=draw_graph,aes(x = desc(per_ref2), y = value)) +
   xlab("Lag") + 
   ylab("Rainfalls standardized") + 
   geom_hline(yintercept=0, linetype="dashed", 
@@ -93,7 +93,11 @@ corrplot(cor_matrix_aps, method = "color", type = "upper",
 
 ggplot(DB_stats, aes(x = "", y = ca_moy_2014_2021)) + geom_boxplot() + labs(title = "Boxplot de ca_moy_2014_2021", y = "ca_moy_2014_2021") + theme(axis.text.x = element_blank())
 
-ggplot(DB_stats, aes(x = "", y = effectifs_moy_2014_2021)) + geom_boxplot() + labs(title = "Boxplot de effectifs_moy_2014_2021 avant retraitement", y = "effectifs_moy_2014_2021") + theme(axis.text.x = element_blank())
+ggplot(DB_stats, aes(x = "", y = effectifs_moy_2014_2021)) + 
+  geom_boxplot() + 
+  labs(title = "Boxplot de effectifs_moy_2014_2021 avant retraitement", 
+       y = "effectifs_moy_2014_2021") + 
+  theme(axis.text.x = element_blank())
 ggplot(DB, aes(x = "", y = effectifs_moy_2014_2021)) + geom_boxplot() + labs(title = "Boxplot de effectifs_moy_2014_2021 après retraitement", y = "effectifs_moy_2014_2021") + theme(axis.text.x = element_blank())
 
 ggplot(DB_stats, aes(x = "", y = Besoin_en_FDR_moy)) + geom_boxplot() + labs(title = "Boxplot de Besoin en fond de roulement (DFDR) moyen avant retraitement", y = "Besoin_en_FDR_moy") + theme(axis.text.x = element_blank())
@@ -138,3 +142,4 @@ ggplot(data = compar_siete_webstat_2, aes(x = Annee, y = Defaillances, color = S
     legend.title = element_text(size = 12),
     legend.text = element_text(size = 10)
   )
+

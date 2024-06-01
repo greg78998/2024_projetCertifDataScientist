@@ -6,7 +6,7 @@
 
 ################################################################################
 
-matricule <- "X822385"
+matricule <- "N818398"
 
 if (matricule == "N818398") {
   path_USER <- paste0("C:/Users/",matricule,"/Desktop/projetBdF", sep = "") 
@@ -46,62 +46,63 @@ if (TOP_RECONSTITUTION == TRUE){
   source("temp_CHIRPScreation.R")
 }
 
+para_annee_ls <- c("2023")
 
-
-
-
-# chargement de la table AGR_FIN
-
-agrfin_data <- X2_creationSIREN_db(para_dt_placement = dt_placement, 
-                                   para_interval = interval_month)
-  
-# chargement de la table CHIRPS 
-
-chirps_data <- X1_creationCHIRPS_db(para_dt_fin = dt_placement,            # date à laquelle on se place
-                                    para_interval_month = interval_month,  # top_defaillance est calculé sur cette table
-                                    para_nbYear_scope = annee_nb)          # combien d'année 
-
-
-# On rajoute les régions sur la base des département
 region_departement <- read_excel(paste0(path_data_,"/region_departement.xlsx", sep =""))
 names(region_departement) <- c("department","departement_name", "region")
 
-DB <- agrfin_data %>% 
-  rename(code_insee = adr_depcom, 
-         Besoin_en_FDR_moy=b001_moy,
-         FDR_moy=b002_moy,
-         Total_actif_immobilise_moy=b102_moy,
-         Total_actif_circulant_moy=b103_moy,
-         Emprunts_et_dettes_assim_moy=b330_moy,
-         Dettes_four_et_comptes_ratt_moy=b342_moy,
-         Autres_dettes_moy=b348_moy,
-         Total_dettes_moy=b500_moy,
-         EBE_moy=r005_moy,
-         Capacite_autofin_moy=r008_moy,
-         Resultat_comptable_moy=r100_moy,
-         CA_net_en_France_moy=r420_moy) %>%
-  left_join(chirps_data, by = c("code_insee", "dt")) %>%
-  mutate(department=as.factor(substr(code_insee,1,2))) %>%
-  select(-c(date_min,top_defaillance, code_insee)) %>%
-  rename(top_defaillance=top_defaillance2) %>% 
-  left_join(region_departement %>% 
-              select(department, region), by = "department") %>% 
-  mutate(ent_age = as.numeric((dt - date_creation)/365), 
-         across(Total_dettes_moy, ~replace_na(., median(., na.rm=TRUE)))) %>% 
-  select(-date_creation)
+for (pp in para_annee_ls) {
+  c_dt_placement <- as.Date(paste0(pp,"-12-31"))
+  
+  agrfin_data <- X2_creationSIREN_db(para_dt_placement = c_dt_placement, 
+                                     para_interval = interval_month)
+  
+  chirps_data <- X1_creationCHIRPS_db(para_dt_fin = c_dt_placement,            # date à laquelle on se place
+                                      para_interval_month = interval_month,  # top_defaillance est calculé sur cette table
+                                      para_nbYear_scope = annee_nb)          # combien d'année
+  
+  
+  DB_work <- agrfin_data %>% 
+    rename(code_insee = adr_depcom, 
+           Besoin_en_FDR_moy=b001_moy,
+           FDR_moy=b002_moy,
+           Total_actif_immobilise_moy=b102_moy,Total_actif_circulant_moy=b103_moy,
+           Emprunts_et_dettes_assim_moy=b330_moy,Dettes_four_et_comptes_ratt_moy=b342_moy,
+           Autres_dettes_moy=b348_moy,Total_dettes_moy=b500_moy,
+           EBE_moy=r005_moy,Capacite_autofin_moy=r008_moy,
+           Resultat_comptable_moy=r100_moy,CA_net_en_France_moy=r420_moy) %>%
+    left_join(chirps_data, by = c("code_insee", "dt")) %>%
+    mutate(department=as.factor(substr(code_insee,1,2))) %>%
+    select(-c(date_min,top_defaillance, code_insee)) %>%
+    rename(top_defaillance=top_defaillance2) %>% 
+    left_join(region_departement %>% 
+                select(department, region), by = "department") %>% 
+    mutate(ent_age = as.numeric((dt - date_creation)/365), 
+           across(Total_dettes_moy, ~replace_na(., median(., na.rm=TRUE)))) %>% 
+    select(-date_creation)
+  
+  if (pp == para_annee_ls[1]){
+    DB <- DB_work
+  } else {
+    DB <- DB %>% bind_rows(DB_work)
+  }
+  
+}
 
 saveRDS(DB, file = paste0(path_data_vf,"/",dt_placement,"_DB_avt_stats.RDS"))
 
-# cf. programme 1_statistics.R, suppression de variables fi (car trop corrélées) puis d'outliers 
-DB <- DB %>% select(-c(FDR_moy, Total_actif_immobilise_moy, Emprunts_et_dettes_assim_moy, Autres_dettes_moy, EBE_moy, Capacite_autofin_moy, CA_net_en_France_moy))
 
-DB <- DB %>% filter(effectifs_moy_2014_2021<350000 & Besoin_en_FDR_moy>-80000 & Besoin_en_FDR_moy<60000 & Total_actif_circulant_moy<150000 &
+# cf. programme 1_statistics.R, suppression de variables fi (car trop corrélées) puis d'outliers 
+DB <- DB %>% select(-c(FDR_moy, 
+                       Total_actif_immobilise_moy, 
+                       Emprunts_et_dettes_assim_moy, 
+                       Autres_dettes_moy, 
+                       EBE_moy, 
+                       Capacite_autofin_moy, 
+                       CA_net_en_France_moy)) %>% 
+  filter(effectifs_moy_2014_2021<350000 & Besoin_en_FDR_moy>-80000 & Besoin_en_FDR_moy<60000 & Total_actif_circulant_moy<150000 &
                         Dettes_four_et_comptes_ratt_moy<10000 & Total_dettes_moy<60000 & Resultat_comptable_moy<75000 & Resultat_comptable_moy>-20000)
 
-#DB_2023 <- DB
-#DB_2022 <- DB
-#DB_2019 <- DB
-#DB <- rbind(DB_2019, DB_2022, DB_2023)
 
 print("contrôle des valeurs manquants")
 print("=> on ne veut que des colonnes complètes")

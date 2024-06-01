@@ -6,7 +6,7 @@
 
 ################################################################################
 
-matricule <- "X822385"
+matricule <- "N818398"
 
 if (matricule == "N818398") {
   path_USER <- paste0("C:/Users/",matricule,"/Desktop/projetBdF", sep = "")
@@ -32,7 +32,7 @@ source("X6_assemblage_table.R")
 dt_placement_futur <-  as.Date("2024-12-31")       # date à laquelle on se place
 interval_month <- 11                               # pour calculer le top_defaillance
 annee_nb <- 6                                      # combien d'année on va extraire
-nb_model <- 2                                     # nb de modèles que nous allons estimer (surtout important pour les modèles qui comportent une part de random)
+nb_model <- 10                                     # nb de modèles que nous allons estimer (surtout important pour les modèles qui comportent une part de random)
 forme_dt_ls <- c("simple","add_succ_surplus","add_succ_chocs","poly") # forme des données
 TOP_production_dataframe_futur <- TRUE            # production de la table
 forme_dt  <- paste(forme_dt_ls, collapse = "_")    # variables calculées
@@ -60,26 +60,20 @@ if (TOP_production_dataframe_futur == TRUE) {
     rename(code_insee = adr_depcom, 
            Besoin_en_FDR_moy=b001_moy,
            FDR_moy=b002_moy,
-           Total_actif_immobilise_moy=b102_moy,
-           Total_actif_circulant_moy=b103_moy,
-           Emprunts_et_dettes_assim_moy=b330_moy,
-           Dettes_four_et_comptes_ratt_moy=b342_moy,
-           Autres_dettes_moy=b348_moy,
-           Total_dettes_moy=b500_moy,
-           EBE_moy=r005_moy,
-           Capacite_autofin_moy=r008_moy,
-           Resultat_comptable_moy=r100_moy,
-           CA_net_en_France_moy=r420_moy) %>%
+           Total_actif_immobilise_moy=b102_moy,Total_actif_circulant_moy=b103_moy,
+           Emprunts_et_dettes_assim_moy=b330_moy,Dettes_four_et_comptes_ratt_moy=b342_moy,
+           Autres_dettes_moy=b348_moy,Total_dettes_moy=b500_moy,
+           EBE_moy=r005_moy,Capacite_autofin_moy=r008_moy,
+           Resultat_comptable_moy=r100_moy,CA_net_en_France_moy=r420_moy) %>%
     left_join(chirps_data_futur, by = c("code_insee", "dt")) %>%
     mutate(department=as.factor(substr(code_insee,1,2))) %>%
     select(-c(date_min,top_defaillance, code_insee)) %>%
     rename(top_defaillance=top_defaillance2) %>% 
     left_join(region_departement %>% 
                 select(department, region), by = "department") %>% 
-    mutate(ent_age = as.numeric((dt - date_creation)/365),
+    mutate(ent_age = as.numeric((dt - date_creation)/365), 
            across(Total_dettes_moy, ~replace_na(., median(., na.rm=TRUE)))) %>% 
     select(-date_creation)
-
   
   print("=> Sauvegarde des données")
   saveRDS(DB_futur_preparation, file = paste0(path_data_vf,"/",dt_placement_futur,"_DB_.RDS"))
@@ -120,7 +114,6 @@ DB_extreme_chocs <- Creation_new_var(para_DB=DB_ori,
 
 #### 4 - Des variables cumulatives 
 
-
 DB_surplus_succ <- add_cumul_function(para_db =DB_surplus, 
                                       prefix = "top_surplus_rf_M", 
                                       para_interval = 3, 
@@ -151,7 +144,7 @@ DB_futur_pred <- DB_futur %>% select(Y)
 
 for (pho in 1:nb_model){
   
-  print(paste0("tour de boucle : prediction sur données futures",pho))
+  print(paste0("tour de boucle : prediction sur données futures - ",pho))
   
   print("=> Lecture xgboost")
   xgb_fit <- readRDS(paste0(path_pg_models_save,"/",forme_dt,"_vf_xgb_n",pho,".RDS"))

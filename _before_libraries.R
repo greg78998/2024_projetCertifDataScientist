@@ -49,3 +49,4 @@ library(shinyWidgets)
 library(DT)
 library(vip)
 
+library(png)
