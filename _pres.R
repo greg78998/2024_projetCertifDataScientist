@@ -1,6 +1,6 @@
 ## Avant le lancement de l'application
 
-matricule <- "X822385"
+matricule <- "N818398"
 
 if (matricule == "N818398") {
   path_USER <- paste0("C:/Users/",matricule,"/Desktop/projetBdF", sep = "")
@@ -8,6 +8,10 @@ if (matricule == "N818398") {
 if (matricule == "X822385"){
   path_USER <- "C:/Users/X822385/Desktop/DS/Projet"
 }
+
+source(paste0(path_USER,"/pg_propre/","_before_chemins.R"))
+source(paste0(path_USER,"/pg_propre/","_before_libraries.R"))
+
 
 dt_placement <- readRDS(file = paste0(path_data_vf,"/","para_dt_placement.RDS"))
 dt_placement_futur <- as.Date("2024-12-31")
@@ -23,9 +27,6 @@ choice_B <- "Un_modèle_suffit"
 choice_C <- "Sur_moyenne_probabilités"
 
 # 0 | chargement des libraries  -----
-
-source(paste0(path_USER,"/pg_propre/","_before_chemins.R"))
-source(paste0(path_USER,"/pg_propre/","_before_libraries.R"))
 
 # 0bis | chargement des fonctions 
 source(paste0(path_USER,"/pg_propre/","X3_MeF_predictionModels.R"))
@@ -43,7 +44,7 @@ db_defaillance <- haven::read_sas(data = paste0(path_data_vf,"/clean_donnees2.sa
   group_by(annee, mois) %>%
   summarize(nb_defaillance = n())
 
-DB_forGraph <- readRDS(paste0(path_data_vf,"/","base_postRET.RDS"))
+DB_forGraph <- readRDS(paste0(path_data_vf,"/",dt_placement,"_DB_postRET.RDS"))
 
 # Données pour l'onglet Statistiques
 DB_defaillance <- DB_forGraph %>% filter(top_defaillance ==1 )
@@ -79,7 +80,8 @@ DF_demain_pred <- readRDS(paste(paste0(path_data_vf,"/",dt_placement_futur),"pre
 
 metriques_pour_Shiny <- readRDS(file = paste0(path_data_vf,"/","metriques_pour_Shiny.RDS") )
 
-lr_rate_mapping <- readRDS(file = paste0(path_data_vf,"/","lr_rate_mapping.RDS") )
+lr_rate_mapping <- readRDS(file = paste0(path_data_vf,"/","lr_rate_mapping.RDS") ) 
+
 
 model_results_pour_Shiny <- readRDS(file = paste0(path_data_vf,"/","model_results_pour_Shiny.RDS") )
 
@@ -165,5 +167,5 @@ if (need){
   eval_set <- testing(training_split)
 }
 
-
+source(paste0(path_USER,"/pg_propre/","prog_graph.R"))
 
