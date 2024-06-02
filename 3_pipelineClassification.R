@@ -244,7 +244,7 @@ if (chargement_modeles == TRUE){
   best_model_rf <- best_model_rf%>% mutate(trees=500) # ajuster à la main
 }
 
-### SPLINE (prend du temps car sur 2 hyperparamètres à tuner ; chiffres obtenus sur n=2)
+### ARBRE DE DECISION + RECIPE SPLINE (prend du temps car sur 2 hyperparamètres à tuner ; chiffres obtenus sur n=2)
  if (chargement_modeles == TRUE){
  spline_mod <- decision_tree(mode = "classification", engine = "rpart",cost_complexity=tune())
  #spline_range <- cost_complexity(range=c(-10,-1))
@@ -261,12 +261,11 @@ if (chargement_modeles == TRUE){
   control=control_grid(verbose=TRUE)
   )
 saveRDS(spline_fitted_cv, file = paste0(path_pg_models_save,"/",forme_dt,"_mod_spline_tuned.RDS"))
-  spline_fitted_cv <- readRDS(file = paste0(path_pg_models_save,"/",forme_dt,"_mod_spline_tuned.RDS"))
-  spline_fitted_cv %>% collect_metrics()
+#spline_fitted_cv <- readRDS(file = paste0(path_pg_models_save,"/",forme_dt,"_mod_spline_tuned.RDS"))
+spline_fitted_cv %>% collect_metrics()
 best_models_spline <- spline_fitted_cv %>% collect_metrics() %>% filter (.metric =='roc_auc') %>% arrange (desc(mean)) # roc_auc = 0,5 à tous les coups...
-best_model_spline <- best_models_spline[1,] %>% mutate(Model="Spline", Forme_Model=forme_dt)
+best_model_spline <- best_models_spline[1,] %>% mutate(Model="Arbre*Recipe spline", Forme_Model=forme_dt)
 }
-
 
 # 4 | Comparaison des modèles
 #rm(model_results,model_results_pour_Shiny)
@@ -275,6 +274,7 @@ model_results_pour_Shiny <- model_results[,c("Model",".metric", "mean", "n", ".c
 #model_results_pour_Shiny <- round(model_results_pour_Shiny[,c("mean")], digits=2)
 saveRDS(model_results_pour_Shiny, file = paste0(path_pg_models_save,"/",forme_dt,"_model_results_pour_Shiny.RDS"))
 #model_results_pour_Shiny <- readRDS(file = paste0(path_pg_models_save,"/",forme_dt,"_model_results_pour_Shiny.RDS"))
+
 
 # concaténation des model_results_pour_Shiny
 simple_model_results_pour_Shiny <- readRDS(file = paste0(path_pg_models_save,"/","simple_model_results_pour_Shiny.RDS"))
