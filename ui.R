@@ -31,9 +31,10 @@ ui <- dashboardPage(
                                 
                                 tabPanel("Approche exploratoire des défaillances",
                                          p(uiOutput("sous_texte_1")),
-                                         p("En difficulté : une entreprise agricole qui se voit concernée par une procédure collective dans les 12 derniers mois (source : tribunaux de commerce)."),
-                                         p("Ce présent projet vise à étudier l'impact des chocs climatiques sur le déclenchement de procédure collective des entreprises agricoles."),
+                                         p("En difficulté : une entreprise agricole qui se voit concernée par une procédure collective (RJ ou LJ) dans les 12 derniers mois (méthodologie BDF)."),
                                          DT::dataTableOutput("tab1_PT"),
+                                         br(),
+                                         br(),
                                          p("Comparaison du nombre de défaillances annuelles entre les données de défaillances utilisées (source SIETE) et les données publiques de défaillances de la Banque de France :"),
                                          plotOutput("tab1_plot_comparaison")),
                                 
@@ -54,6 +55,9 @@ ui <- dashboardPage(
                                              column(6, plotOutput("tab1_cor_matrix_avt", height = "400px")),
                                              column(6, plotOutput("tab1_cor_matrix_aps", height = "400px"))
                                          ),
+                                         br(),
+                                         br(),
+                                         br(),
                                          p("Boîtes à moustaches des variables financières avant et après élimination des observations très atypiques :"),
                                          fluidRow(
                                              column(6, plotOutput("tab1_boxplot_var2a")),
@@ -111,7 +115,13 @@ ui <- dashboardPage(
                                     p("La courbe de densité des prédictions permet d'évaluer la capacité discriminante du modèle XGBoost. Elle permet de voir la distribution des prédictions de chaque classe et d'identifier facilement si le modèle a tendance à bien séparer les classes."),
                                     p("La courbe de densité est donc utilisée pour déterminer le meilleur taux d'apprentissage (learning rate) de notre modèle, qui est son hyperparamètre le plus important."),
                                     plotOutput("density_plot", height = "400px", width = "700px"),
-                                    p("Ci-dessous, les métriques (précision et rappel) calculées sur les données de test pour les différents taux d'apprentissage :"),
+                                    br(),
+                                    br(),
+                                    br(),
+                                    br(),
+                                    p("Ci-dessous, les métriques (précision et rappel) calculées sur les données de test pour les différents taux d'apprentissage."),
+                                    p("Le seuil est la probabilité au-delà de laquelle une instance est prédite comme positive. Augmenter le seuil diminue le nombre de défaillances prédites (et donc le rappel), et inversément."),
+                                    p("On observe que les probabilité de défaillance prédites diminuent en fonction du learning rate. Il faudra donc adapter le seuil suivant le learning rate choisi."),
                                     h2("Métriques considérées"),
                                     DT::dataTableOutput("selected_metrics")
                                 )
@@ -136,8 +146,12 @@ ui <- dashboardPage(
                             p("Avoir un modèle unique de Machine Learning permet une appropriation plus simple par le métier."),
                             p("Identification des variables ayant un effet significatif sur la capacité du modèle à discriminer les sociétés en défaillances ou pas. La méthode VIP (Variable Importance in Projection) a été utilisée pour le modèle XGBoost sur les données d'apprentissage :"),
                             
-                            plotOutput("importance_plot", height = "400px", width = "700px")
-                        )
+                            plotOutput("importance_plot", height = "600px", width = "900px"),
+                            br(),
+                            br(),
+                            p("L'importance des variables est ici calculée avec la méthode basée sur le gain. Cette méthode permet d'identifier quelles variables sont les plus influentes en termes de réduction de la fonction de coût et donc pour les prédictions du modèle."),
+                            p("Par exemple, une variable avec une importance de 0.25 contribue 5 fois plus qu'une variable avec une importance de 0.05 à la réduction de la perte globale du modèle.")
+                            )
                     )
             )
             ),
