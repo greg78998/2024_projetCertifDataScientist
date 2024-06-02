@@ -46,7 +46,10 @@ for (pho in 1:nrow(param_xgboost)) {
   
   # Obtenir les prédictions sur l'ensemble de test
   DF_test_S[, paste("xgb_mod_", pho, sep = "")] <- predict(xgb_fit, test_set, type = "prob")[, 2]
-}
+
+  }
+
+
 
 # Courbes ROC
 #library(pROC)
@@ -83,6 +86,7 @@ saveRDS(lr_rate_mapping,
 
 # Initialisation de la table pour stocker les métriques pour Shiny (à faire en dehors d'une boucle)
 metriques_pour_Shiny <- data.frame(learn_rate = numeric(),
+                                   roc_auc=numeric(),
                                    mtry = numeric(),
                                    min_n = numeric(),
                                    accuracy = numeric(),
@@ -117,6 +121,9 @@ for (i in 1:nrow(param_xgboost)) {
   predictions <- DF_test_S[, paste0("xgb_mod_", i)]
   
   
+  # Calcul du ROC AUC 
+  roc_auc <- roc(DF_test_S$Y, predictions)
+  
   ###### Sauvegarde des DF_entrainement_S et DF_test_S pour l'application SHINY
   saveRDS(DF_test_S,
           file = paste0(path_data_vf,"/",dt_placement,'_',forme_dt,'_',"basesPREVISION_test_S",".RDS") )
@@ -137,6 +144,7 @@ for (i in 1:nrow(param_xgboost)) {
   # Stocker les métriques dans la table metriques_pour_Shiny
   metriques_pour_Shiny <- rbind(metriques_pour_Shiny,
                                 data.frame(learn_rate = learn_rate,
+                                           roc_auc = roc_auc$auc,
                                            mtry = mtry,
                                            min_n = min_n,
                                            accuracy = acc,
